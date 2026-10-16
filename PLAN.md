@@ -88,10 +88,11 @@ Faza 1 + 5 (kafelek) da się zrobić w jednym podejściu, jak dostanę przykład
 
 | Temat | Decyzja |
 |---|---|
-| Układ Excela | jeszcze niedopracowany; skrypt rozpoznaje kolumny po nagłówkach i jest odporny na różnice między latami |
+| Układ Excela | docelowy (screen z 16.10): Liczba porządkowa, Zgonu, Pogrzebu, Numer domu, opis aktu, Imię nazwisko, Mama, Tata, Małżonek, Religia, Płeć, Wiek zmarłego, Przyczyna zgonu, Data urodzenia, Uwagi (opcjonalnie: Skan). Skrypt rozpoznaje kolumny po nagłówkach, więc działa też ze starszym układem. W 1 = tylko znacznik wyznania/płci; zielona kolumna „sprawdzone” jest ignorowana |
 | Zakres lat | akty do 1945 włącznie; na start zgony Przytkowic 1881–1941 |
-| Źródło skanów | Skanoteka; przy akcie link do skanu. Własne skany: odnośnik do osobnej podstrony w katalogu |
-| Skala na start | ok. 150 rekordów (4 pliki, 40–60 aktów w pliku), więc wszystko ładuje się naraz |
+| Źródło skanów | Skanoteka (`skanoteka.genealodzy.pl`, parametr `plik=NNN.JPG` wskazuje zdjęcie); link do zdjęcia z kolumny „Skan”, bez niej do 1. zdjęcia księgi. Własne skany: odnośnik do osobnej podstrony w katalogu |
+| Skala na start | 4 pliki: 1890, 1891, 1939, 1941 (212 aktów) – wszystko ładuje się naraz. Pliki 1892–1938 są jeszcze nietłumaczone |
+| Daty | osobne kolumny: data zgonu (bywa niewidoczna na skanie) i data pogrzebu. Wiek „50 lat 2/12” = ok. 50 lat i 2 miesiące; data urodzenia tylko gdy podana w akcie |
 | Repo | publiczne, tylko pliki JSON (Excele zostają lokalnie, `*.xlsx` jest w `.gitignore`) |
 | Licencja danych | CC BY-NC 4.0 (stopka + strona „O projekcie”) |
 | Wygląd | tabelaryczny, w stylu Geneteki, ale czysty i czytelny na telefonie |
@@ -100,15 +101,19 @@ Faza 1 + 5 (kafelek) da się zrobić w jednym podejściu, jak dostanę przykład
 
 ## 8. Stan realizacji
 
-**Faza 1 – zrobione lokalnie, jeszcze niewdrożone:**
+**Faza 1 – wdrożona 17.10.2026:** https://wrobelkarol.github.io/wadobaza/ (repo: https://github.com/wrobelkarol/wadobaza,
+GitHub Pages z folderu `docs`, gałąź `main`). Szczegóły:
 - [x] `skrypty/build.py`: Excel -> JSON, rozpoznawanie kolumn po nagłówkach, limit roku, raport jakości
       (np. daty pogrzebu cofające się w czasie, rekordy bez rozpoznanego nazwiska)
 - [x] wyszukiwarka: nazwisko, imię, lata, parafia, rodzaj aktu, płeć, nr domu, tekst; odmiana nazwisk;
       sortowanie po każdej kolumnie; szczegóły aktu; link do pojedynczego aktu; adres z parametrami
 - [x] strona „O projekcie” z zestawieniem zakresu bazy
-- [ ] repozytorium na GitHubie + GitHub Pages (czeka na zgodę)
-- [ ] kafelek w portfolio `wrobelkarol.github.io` (czeka na zgodę)
-- [ ] linki do skanów w `dane/zrodla.json` (potrzebny przykładowy link ze Skanoteki)
+- [x] repozytorium na GitHubie + GitHub Pages
+- [x] tabela jak w Excelu: Mama, Tata, Małżonek, osobno data zgonu i pogrzebu; nazwisko w opisie aktu (np. po mężu) osobno
+- [ ] kafelek w portfolio `wrobelkarol.github.io` (czeka na zgodę na zmianę w tamtym repo)
+- [ ] linki do skanów w `dane/zrodla.json`: jest szablon dla 1941 (id=5557, sygn. 5500); brak dla 1890, 1891, 1939
+- [ ] kolumna „Skan” w Excelu (numer zdjęcia), żeby akt linkował do konkretnego zdjęcia
+- [ ] ustalić konwencję: kolumna „Imię nazwisko” – kobiety pod nazwiskiem panieńskim?
 
 **Test na wszystkich plikach (tylko lokalnie, nie publikowane):** 2081 rekordów z lat 1890–1941, nazwisko
 rozpoznane w 98% (37 rekordów to głównie mężatki i dzieci nieślubne w starszym stylu opisu — i tak są

@@ -5,6 +5,8 @@ Strona statyczna (HTML + CSS + JS), bez serwera i bez kont użytkowników – wy
 
 Na start: **Przytkowice, zgony**. Baza rośnie razem z tłumaczeniami.
 
+Strona: https://wrobelkarol.github.io/wadobaza/
+
 ## Jak działa
 
 ```
@@ -37,7 +39,12 @@ Strona będzie pod adresem http://localhost:8123.
    Przydatne opcje: `--sucho` (tylko raport), `--szczegoly` (pełna lista), `--max-rok 1945`, `--bez-uwag`.
 3. Sprawdź stronę lokalnie, potem `git add`, `git commit`, `git push`.
 
-Linki do skanów (Skanoteka) wpisuje się w `dane/zrodla.json` (klucz `parafia/rodzaj/rok`).
+Linki do skanów (Skanoteka) wpisuje się w `dane/zrodla.json` (klucz `parafia/rodzaj/rok`, w adresie `{plik}`
+zastępuje numer zdjęcia). Jeśli w Excelu jest kolumna `Skan` z numerem zdjęcia (np. `2`), akt linkuje do tego zdjęcia.
+
+Skrypt rozpoznaje kolumny po nagłówkach: Liczba porządkowa, Zgonu, Pogrzebu, Numer domu, opis aktu,
+Imię nazwisko, Mama, Tata, Małżonek, Religia, Płeć, Wiek zmarłego, Przyczyna zgonu, Data urodzenia, Uwagi, Skan.
+Działa też ze starszym układem (bez Mama/Tata/Małżonek).
 
 ## Zasady publikacji
 
