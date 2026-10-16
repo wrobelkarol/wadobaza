@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wadobaza – indeks metryk parafialnych powiatu wadowickiego</title>
+  <meta name="description" content="Wyszukiwarka przetłumaczonych aktów z metryk parafialnych parafii powiatu wadowickiego: nazwisko, imię, lata, parafia.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="pomin" href="#wyniki">Przejdź do wyników</a>
+
+  <header class="gora">
+    <div class="kolumna gora-wnetrze">
+      <a class="marka" href="./">
+        <span class="marka-nazwa">Wadobaza</span>
+        <span class="marka-opis">indeks metryk parafialnych · powiat wadowicki</span>
+      </a>
+      <nav class="menu" aria-label="Główne">
+        <a href="./" aria-current="page">Szukaj</a>
+        <a href="o-projekcie.html">O projekcie</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="kolumna">
+    <p class="wstep">
+      Akty z ksiąg parafialnych, które sam przetłumaczyłem z łaciny i polszczyzny dawnych zapisów.
+      <span id="stan-bazy" class="stan-bazy">Wczytuję dane…</span>
+    </p>
+
+    <noscript><p class="komunikat">Wyszukiwarka wymaga włączonego JavaScriptu.</p></noscript>
+
+    <form id="formularz" class="szukaj" role="search" autocomplete="off" novalidate>
+      <div class="pola">
+        <label class="pole">
+          <span>Nazwisko</span>
+          <input type="search" name="n" inputmode="text" spellcheck="false" placeholder="np. Kukuła">
+        </label>
+        <label class="pole">
+          <span>Imię</span>
+          <input type="search" name="i" inputmode="text" spellcheck="false" placeholder="np. Marianna">
+        </label>
+        <label class="pole">
+          <span>Rok aktu od</span>
+          <input type="number" name="od" inputmode="numeric" min="1500" max="2100" placeholder="1881">
+        </label>
+        <label class="pole">
+          <span>Rok aktu do</span>
+          <input type="number" name="do" inputmode="numeric" min="1500" max="2100" placeholder="1945">
+        </label>
+        <label class="pole">
+          <span>Parafia</span>
+          <select name="p"><option value="">wszystkie</option></select>
+        </label>
+      </div>
+
+      <details id="wiecej" class="wiecej">
+        <summary>Więcej kryteriów: rodzaj aktu, płeć, numer domu, tekst w opisie</summary>
+        <div class="pola">
+          <label class="pole">
+            <span>Rodzaj aktu</span>
+            <select name="t"><option value="">wszystkie</option></select>
+          </label>
+          <label class="pole">
+            <span>Płeć</span>
+            <select name="pl">
+              <option value="">obie</option>
+              <option value="K">kobieta</option>
+              <option value="M">mężczyzna</option>
+            </select>
+          </label>
+          <label class="pole">
+            <span>Numer domu</span>
+            <input type="text" name="d" inputmode="text" spellcheck="false" placeholder="np. 64">
+          </label>
+          <label class="pole szerokie">
+            <span>Szukaj w opisie, przyczynie, uwagach</span>
+            <input type="search" name="q" spellcheck="false" placeholder="np. gruźlica, Holubars, Benczyn">
+          </label>
+        </div>
+      </details>
+
+      <div class="opcje">
+        <label class="opcja"><input type="checkbox" name="sz" checked>
+          <span>Szukaj też wśród rodziców, małżonków i nazwisk panieńskich</span></label>
+        <label class="opcja"><input type="checkbox" name="dk">
+          <span>Dokładne brzmienie (bez końcówek odmiany)</span></label>
+      </div>
+
+      <div class="przyciski">
+        <button type="submit" class="przycisk glowny">Szukaj</button>
+        <button type="reset" class="przycisk" id="wyczysc">Wyczyść</button>
+      </div>
+    </form>
+
+    <section id="wyniki" class="wyniki" aria-labelledby="wyniki-naglowek" tabindex="-1">
+      <div class="wyniki-pasek">
+        <h2 id="wyniki-naglowek" class="wyniki-licznik" aria-live="polite">Wyniki</h2>
+        <label class="na-stronie">
+          <span>Na stronie</span>
+          <select id="na-stronie">
+            <option>25</option><option selected>50</option><option>100</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="brak-wynikow" class="komunikat" hidden></div>
+
+      <div class="tabela-opakowanie">
+        <table class="tabela" id="tabela">
+          <caption class="tylko-czytnik">Wyniki wyszukiwania. Kliknij nagłówek kolumny, aby sortować.</caption>
+          <thead>
+            <tr>
+              <th class="kol-rozwin"><span class="tylko-czytnik">Szczegóły</span></th>
+              <th scope="col" data-sort="parafia"><button type="button">Parafia</button></th>
+              <th scope="col" data-sort="rok"><button type="button">Rok</button></th>
+              <th scope="col" data-sort="nr" class="ukryj-m"><button type="button">Nr</button></th>
+              <th scope="col" data-sort="data_zgonu" class="ukryj-m"><button type="button">Data zgonu</button></th>
+              <th scope="col" data-sort="data_pogrzebu"><button type="button">Data pogrzebu</button></th>
+              <th scope="col" data-sort="nazwisko"><button type="button">Nazwisko</button></th>
+              <th scope="col" data-sort="imie"><button type="button">Imię</button></th>
+              <th scope="col" data-sort="matka" class="ukryj-m"><button type="button">Mama</button></th>
+              <th scope="col" data-sort="ojciec" class="ukryj-m"><button type="button">Tata</button></th>
+              <th scope="col" data-sort="malzonek" class="ukryj-m"><button type="button">Małżonek</button></th>
+              <th scope="col" data-sort="wiek" class="ukryj-m"><button type="button" title="Zapis „50 lat 2/12” oznacza około 50 lat i 2 miesiące">Wiek zmarłego</button></th>
+              <th scope="col" data-sort="dom" class="ukryj-m"><button type="button">Dom</button></th>
+              <th scope="col" data-sort="plec" class="ukryj-m"><button type="button">Płeć</button></th>
+              <th scope="col" data-sort="przyczyna" class="ukryj-m"><button type="button">Przyczyna zgonu</button></th>
+            </tr>
+          </thead>
+          <tbody id="wiersze"></tbody>
+        </table>
+      </div>
+
+      <nav id="strony" class="strony" aria-label="Strony wyników" hidden>
+        <button type="button" class="przycisk" id="poprzednia">‹ Poprzednia</button>
+        <span id="strona-info"></span>
+        <button type="button" class="przycisk" id="nastepna">Następna ›</button>
+      </nav>
+    </section>
+  </main>
+
+  <footer class="stopka">
+    <div class="kolumna">
+      <p>
+        Tłumaczenia i indeks © Karol Wróbel, licencja
+        <a id="licencja" href="https://creativecommons.org/licenses/by-nc/4.0/deed.pl" rel="license noopener">CC BY-NC 4.0</a>
+        – można używać z podaniem źródła, bez celów komercyjnych.
+        Skany ksiąg: Skanoteka.
+      </p>
+      <p><a href="o-projekcie.html">O projekcie i zasadach</a> ·
+         <a href="https://github.com/wrobelkarol/wadobaza" rel="noopener">Kod na GitHubie</a></p>
+    </div>
+  </footer>
+
+  <script src="js/common.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

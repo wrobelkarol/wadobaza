@@ -1,0 +1,8 @@
+{
+  "_opis": "Linki do skanów w Skanotece. Klucz: parafia/rodzaj/rok. W 'url' wpisz adres zdjęcia z księgi, a w miejscu nazwy pliku zostaw {plik} (np. ...&plik={plik}). Jeśli w Excelu jest kolumna 'Skan' z numerem zdjęcia, akt linkuje do tego zdjęcia; bez niej – do zdjęcia 'plik_domyslny'.",
+  "przytkowice/zgony/1941": {
+    "nazwa": "Skanoteka, Przytkowice, sygn. 5500, rok 1941",
+    "url": "https://skanoteka.genealodzy.pl/index.php?op=pg&id=5557&se=&sy=5500&kt=45&plik={plik}",
+    "plik_domyslny": "001.JPG"
+  }
+}

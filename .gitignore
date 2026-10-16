@@ -1,0 +1,11 @@
+# Pliki Excel zostają lokalnie – do repozytorium trafia tylko wygenerowany JSON
+*.xlsx
+*.xls
+~$*
+
+# lokalne ustawienia
+skrypty/zrodla.txt
+.claude/
+
+__pycache__/
+*.pyc

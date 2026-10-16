@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>O projekcie – Wadobaza</title>
+  <meta name="description" content="Czym jest Wadobaza, co zawiera, skąd pochodzą dane i jakie zasady obowiązują przy ich publikowaniu.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="gora">
+    <div class="kolumna gora-wnetrze">
+      <a class="marka" href="./">
+        <span class="marka-nazwa">Wadobaza</span>
+        <span class="marka-opis">indeks metryk parafialnych · powiat wadowicki</span>
+      </a>
+      <nav class="menu" aria-label="Główne">
+        <a href="./">Szukaj</a>
+        <a href="o-projekcie.html" aria-current="page">O projekcie</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="kolumna tresc">
+    <h1>O projekcie</h1>
+    <p>
+      Wadobaza to prywatny, niekomercyjny indeks aktów z ksiąg parafialnych
+      parafii powiatu wadowickiego. Zawiera wyłącznie to, co sam przetłumaczyłem z łaciny
+      i dawnej polszczyzny, więc rośnie w tempie mojej pracy.
+      Nie ma tu kont ani logowania – strona jest zwykłym zestawem plików.
+    </p>
+
+    <h2>Co jest w bazie</h2>
+    <div id="zakres"><p>Wczytuję zestawienie…</p></div>
+
+    <h2>Jak szukać</h2>
+    <ul>
+      <li>Wystarczy wpisać fragment nazwiska – polskie znaki i końcówki odmiany nie mają znaczenia
+        (<em>Kukuła</em> znajdzie też <em>Kukuły</em>, <em>Gnojek</em> znajdzie <em>Gnojka</em>).</li>
+      <li>Domyślnie wyszukiwarka sprawdza też rodziców, małżonków i nazwiska panieńskie z opisu aktu.
+        Dopasowania w samym zmarłym lub zmarłej pojawiają się wyżej.</li>
+      <li>Nazwiska bywały zapisywane różnie (<em>Zając</em> / <em>Zajonc</em>, <em>Bik</em> / <em>Byk</em>).
+        Warto sprawdzić kilka wariantów.</li>
+      <li>Imiona występują w opisie po polsku i po łacinie (np. <em>Marianna</em> ~ <em>Marianna</em>,
+        <em>Jan</em> ~ <em>Joannes</em>) – łacińską formę znajdziesz polem „Szukaj w opisie”.</li>
+      <li>Data zgonu bywa niewidoczna na skanie – wtedy jej kolumna jest pusta, a data pogrzebu pozostaje.
+        Wiek zapisany jako „50 lat 2/12” oznacza około 50 lat i 2 miesiące. Data urodzenia jest tylko tam,
+        gdzie podano ją w akcie.</li>
+      <li>Kolumny Mama, Tata i Małżonek uzupełniam stopniowo, więc w części aktów są jeszcze puste.
+        Te informacje zawsze znajdziesz w pełnym opisie aktu.</li>
+      <li>Kliknięcie wiersza pokazuje pełny opis aktu, przyczynę zgonu, datę urodzenia i źródło.
+        Przy każdym akcie jest stały link, który możesz komuś wysłać.</li>
+    </ul>
+
+    <h2>Zasady i ochrona danych osobowych</h2>
+    <ul>
+      <li>Publikuję tylko akty z roku <strong id="max-rok">1945</strong> i wcześniejsze.
+        Granicę sprawdza automatycznie skrypt, który tworzy dane.</li>
+      <li>Tłumaczenia mogą zawierać błędy – dawne pismo bywa nieczytelne. Wątpliwe miejsca oznaczam w
+        uwagach lub znakiem zapytania w nawiasie kwadratowym. Zawsze warto sprawdzić skan.</li>
+      <li>Jeśli któryś zapis jest błędny albo ktoś z rodziny prosi o jego wycofanie, napisz –
+        poprawię lub usunę akt.</li>
+    </ul>
+
+    <h2>Źródła</h2>
+    <p>
+      Opisy przygotowuję na podstawie skanów ksiąg parafialnych udostępnionych w Skanotece.
+      Przy aktach jest informacja o księdze, z której pochodzą, a tam gdzie to możliwe –
+      bezpośredni link do skanu. Skany pozostają u ich właściciela; własne skany, jeśli kiedyś je
+      udostępnię, znajdą się na osobnej podstronie.
+    </p>
+
+    <h2>Licencja</h2>
+    <p>
+      Tłumaczenia i indeks: © Karol Wróbel, licencja
+      <a id="licencja" href="https://creativecommons.org/licenses/by-nc/4.0/deed.pl" rel="license noopener">CC BY-NC 4.0</a>.
+      Wolno korzystać z danych i je rozpowszechniać z podaniem źródła (Wadobaza), bez celów komercyjnych.
+    </p>
+
+    <h2>Zgłaszanie błędów i kontakt</h2>
+    <p>
+      Najprościej przez przycisk „Zgłoś błąd w tym akcie” przy rekordzie
+      albo na <a href="https://github.com/wrobelkarol/wadobaza/issues" rel="noopener">GitHubie projektu</a>.
+    </p>
+
+    <h2>Plany</h2>
+    <p>
+      Kolejne parafie i lata, wyszukiwanie według brzmienia nazwiska, a docelowo automatyczne łączenie
+      aktów w drzewa genealogiczne rodzin.
+    </p>
+  </main>
+
+  <footer class="stopka">
+    <div class="kolumna">
+      <p><a href="./">← Wróć do wyszukiwarki</a> ·
+         <a href="https://github.com/wrobelkarol/wadobaza" rel="noopener">Kod na GitHubie</a></p>
+    </div>
+  </footer>
+
+  <script src="js/common.js"></script>
+  <script>
+    (function () {
+      var W = window.Wadobaza;
+      var cel = document.getElementById('zakres');
+      W.loadManifest().then(function (m) {
+        var tabela = document.createElement('table');
+        tabela.innerHTML = '<thead><tr><th>Parafia</th><th>Rodzaj aktu</th><th>Lata</th><th>Akty</th></tr></thead>';
+        var tb = document.createElement('tbody');
+        var razem = 0;
+        m.zbiory.forEach(function (z) {
+          var tr = document.createElement('tr');
+          [z.parafia, W.TYPY[z.typ] || z.typ, W.skrocLata(z.lata), String(z.rekordow)].forEach(function (t) {
+            var td = document.createElement('td'); td.textContent = t; tr.appendChild(td);
+          });
+          razem += z.rekordow;
+          tb.appendChild(tr);
+        });
+        tabela.appendChild(tb);
+        cel.textContent = '';
+        cel.appendChild(tabela);
+        var p = document.createElement('p');
+        p.textContent = 'Razem ' + razem + ' ' + W.liczebnik(razem, 'akt', 'akty', 'aktów') + '. Stan na ' + W.formatData(m.wygenerowano) + '.';
+        cel.appendChild(p);
+        document.getElementById('max-rok').textContent = m.max_rok;
+        if (m.licencja) {
+          var a = document.getElementById('licencja');
+          a.textContent = m.licencja.nazwa; a.href = m.licencja.url;
+        }
+      }).catch(function () {
+        cel.textContent = 'Nie udało się wczytać zestawienia.';
+      });
+    })();
+  </script>
+</body>
+</html>

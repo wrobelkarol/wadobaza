@@ -1,0 +1,31 @@
+{
+  "wygenerowano": "2026-10-17",
+  "max_rok": 1945,
+  "licencja": {
+    "nazwa": "CC BY-NC 4.0",
+    "url": "https://creativecommons.org/licenses/by-nc/4.0/deed.pl"
+  },
+  "zbiory": [
+    {
+      "plik": "przytkowice-zgony.json",
+      "parafia": "Przytkowice",
+      "parafia_id": "przytkowice",
+      "typ": "zgony",
+      "lata": [
+        1890,
+        1891,
+        1939,
+        1941
+      ],
+      "rekordow": 212
+    }
+  ],
+  "zrodla": {
+    "_opis": "Linki do skanów w Skanotece. Klucz: parafia/rodzaj/rok. W 'url' wpisz adres zdjęcia z księgi, a w miejscu nazwy pliku zostaw {plik} (np. ...&plik={plik}). Jeśli w Excelu jest kolumna 'Skan' z numerem zdjęcia, akt linkuje do tego zdjęcia; bez niej – do zdjęcia 'plik_domyslny'.",
+    "przytkowice/zgony/1941": {
+      "nazwa": "Skanoteka, Przytkowice, sygn. 5500, rok 1941",
+      "url": "https://skanoteka.genealodzy.pl/index.php?op=pg&id=5557&se=&sy=5500&kt=45&plik={plik}",
+      "plik_domyslny": "001.JPG"
+    }
+  }
+}

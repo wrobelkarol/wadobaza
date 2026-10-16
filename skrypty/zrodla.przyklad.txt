@@ -1,0 +1,6 @@
+# Skopiuj ten plik jako skrypty/zrodla.txt i wpisz ścieżki do plików lub folderów z Excelami
+# (po jednej w wierszu). Pliki i foldery można dopisywać w miarę postępu tłumaczeń.
+# Oczekiwana struktura: <Parafia>/<Zgony|Urodzenia|Śluby>/<rok>/plik.xlsx
+#
+# C:\Users\imie\Downloads\SKANY TEST\Przytkowice\Zgony\1941\1941_2.xlsx
+# C:\Users\imie\Downloads\SKANY TEST\Przytkowice\Zgony\1939
