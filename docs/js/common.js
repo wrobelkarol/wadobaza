@@ -23,7 +23,9 @@
   function formatData(iso) {
     if (!iso) { return ''; }
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-    return m ? (+m[3]) + '.' + (+m[2]) + '.' + m[1] : String(iso);
+    if (m) { return (+m[3]) + '.' + (+m[2]) + '.' + m[1]; }
+    var mr = /^(\d{4})-(\d{2})$/.exec(iso);  // znany tylko miesiąc i rok
+    return mr ? (+mr[2]) + '.' + mr[1] : String(iso);
   }
 
   /* [1881,1882,1883,1890] -> '1881–1883, 1890' */

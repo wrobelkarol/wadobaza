@@ -137,7 +137,7 @@ main { padding-top: 20px; padding-bottom: 32px; }
 .wzgl { font-size: .75em; font-weight: 400; color: var(--przygaszony); }
 
 .szczegoly > td { background: var(--zebra); padding: 14px 16px 18px 16px; }
-.szczegoly .auto { font-style: italic; }
+.szczegoly .auto { font-style: italic; color: var(--przygaszony); }
 .opis-aktu { margin: 0 0 12px; font-family: var(--szeryf); font-size: 1.02rem; line-height: 1.6; max-width: 90ch; }
 .fakty { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px 20px; margin: 0 0 12px; }
 .fakty div { min-width: 0; }

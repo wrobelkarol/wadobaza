@@ -39,6 +39,20 @@ Strona będzie pod adresem http://localhost:8123.
    Przydatne opcje: `--sucho` (tylko raport), `--szczegoly` (pełna lista), `--max-rok 1945`, `--bez-uwag`.
 3. Sprawdź stronę lokalnie, potem `git add`, `git commit`, `git push`.
 
+### Podpowiedź Excela (nowy plik w nowym układzie)
+
+Żeby nie przepisywać ręcznie starych plików, skrypt tworzy **nowy** plik w docelowym układzie (obok oryginału, z dopiskiem `_nowy`;
+oryginał zostaje nietknięty):
+
+```bash
+python skrypty/podpowiedz_excel.py "C:/.../Przytkowice/Zgony/1890/1890.xlsx"
+```
+
+Opis jest czyszczony z łaciny, a w wierszach jeszcze nieprzerobionych kolumny Imię nazwisko, Mama, Tata, Małżonek, Uwagi i Kapłan
+są wypełniane wstępnie z opisu i zaznaczane na **żółto** (do sprawdzenia). Wiersze już przerobione ręcznie są przepisywane bez zmian.
+Po sprawdzeniu popraw wartość i zdejmij żółte wypełnienie; dopóki komórka jest żółta, strona pokazuje ją kursywą jako niesprawdzoną.
+Wzór arkusza (sam nagłówek) to `skrypty/wzor_zgony.xlsx`. Pliki `*_nowy*.xlsx` są pomijane, gdy podajesz buildowi cały folder.
+
 Linki do skanów (Skanoteka) wpisuje się w `dane/zrodla.json` (klucz `parafia/rodzaj/rok`, w adresie `{plik}`
 zastępuje numer zdjęcia). Jeśli w Excelu jest kolumna `Skan` z numerem zdjęcia (np. `2`), akt linkuje do tego zdjęcia.
 

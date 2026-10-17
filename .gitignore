@@ -3,6 +3,9 @@
 *.xls
 ~$*
 
+# wyjątek: wzór arkusza do nowych plików (sam nagłówek i formatowanie, bez danych)
+!skrypty/wzor_*.xlsx
+
 # lokalne ustawienia
 skrypty/zrodla.txt
 .claude/

@@ -25,6 +25,13 @@ import unicodedata
 from collections import Counter, defaultdict
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # żeby działało też z opcją -I
+from opis import (  # noqa: E402
+    dodatkowe_z_opisu, kobieta_zamezna, nazwisko_mianownik, nazwisko_panienskie, popraw_miejscowosci,
+    rodzina_z_opisu, rozdziel_kaplana,
+    usun_lacine, wiek_pelne_lata, zbierz_znane_nazwiska,
+)
+
 try:
     import openpyxl
 except ImportError:  # pragma: no cover
@@ -83,6 +90,17 @@ def tekst(v: object) -> str | None:
     return None if zloz(s) in PUSTE else s
 
 
+def zolta(komorka) -> bool:
+    """Czy komórka ma żółte wypełnienie z podpowiedz_excel.py (FFF2CC) – wartość do sprawdzenia."""
+    f = komorka.fill
+    return bool(f is not None and f.fill_type == "solid" and str(f.fgColor.rgb).upper().endswith("FFF2CC"))
+
+
+def poprawione(t: str | None) -> str | None:
+    """Tekst bez łacińskich nawiasów i z miejscowościami w miejscowniku."""
+    return popraw_miejscowosci(usun_lacine(t)) if t else t
+
+
 def liczba(v: object) -> int | None:
     t = tekst(v)
     if t is None:
@@ -119,6 +137,10 @@ def parsuj_date(v: object) -> tuple[str | None, str | None]:
         v = v.date()
     if isinstance(v, dt.date):
         return v.isoformat(), None
+    if isinstance(v, float) and not v.is_integer():  # "4.1941" wpisane jako liczba = kwiecień 1941 (bez dnia)
+        m = re.fullmatch(r"(\d{1,2})\.(\d{4})", repr(v))
+        if m and 1 <= int(m[1]) <= 12:
+            return f"{m[2]}-{int(m[1]):02d}", None
     if isinstance(v, (int, float)):
         n = int(v)
         if 1700 <= n <= 2100:
@@ -136,6 +158,9 @@ def parsuj_date(v: object) -> tuple[str | None, str | None]:
     if m:
         wynik = _data_lub_none(int(m[3]), int(m[2]), int(m[1]))
         return (wynik, None) if wynik else (None, f"nieprawidłowa data '{s}'")
+    mm = re.fullmatch(r"(\d{1,2})\.(\d{4})", s)  # miesiąc i rok bez dnia
+    if mm and 1 <= int(mm[1]) <= 12:
+        return f"{mm[2]}-{int(mm[1]):02d}", None
     if re.fullmatch(r"\d{4}", s):
         return s, None
     return None, f"nie rozpoznano daty '{s}'"
@@ -243,94 +268,6 @@ def rozbierz_opis(opis: str) -> dict:
     return wynik
 
 
-# ---------------------------------------------------------------- rodzice z opisu (heurystyka)
-# Używane tylko dla aktów, w których w Excelu nie ma jeszcze kolumn Mama / Tata.
-# Wynik jest oznaczany jako "z opisu" i wymaga sprawdzenia.
-
-WYJATKI_MESKIE = {
-    "Franciszka": "Franciszek", "Marka": "Marek", "Jacka": "Jacek", "Pawła": "Paweł",
-    "Wawrzyńca": "Wawrzyniec", "Walentego": "Walenty", "Wincentego": "Wincenty",
-    "Ignacego": "Ignacy", "Jerzego": "Jerzy", "Antoniego": "Antoni", "Konstantego": "Konstanty",
-    "Kuby": "Kuba", "Marcina": "Marcin", "Bartłomieja": "Bartłomiej", "Błażeja": "Błażej",
-    "Józefa": "Józef", "Łukasza": "Łukasz", "Michała": "Michał", "Stanisława": "Stanisław",
-}
-RE_KLUCZ_RODZICE = re.compile(r"\b(?:syn|córka|córką|synem|dziecko)\b")
-RE_PRZEDROSTEK = re.compile(r"\s*(?:(?:nie)?ślubn\w+\s+|prawowit\w+\s+)*")
-RE_I = re.compile(r"\s*,?\s*i\s+")
-RE_OSOBA = re.compile(
-    rf"(?P<imie>{SLOWO}(?:\s+{SLOWO})?)\s*\((?P<lac>[^)]*)\)(?:\s+(?P<nazw>{SLOWO}))?"
-    rf"(?:\s+zwan\w+\s+\([^)]*\)\s+{SLOWO})?"
-    rf"(?:\s*,\s*(?P<zaw>[{LOW}][^,.;()\[\]]*?)\s*,)?(?:\s+z\s+domu\s+(?P<pan>{SLOWO}))?"
-)
-RE_UR = re.compile(r"\bur\.\s+(?:w|we|na)\b")
-
-
-def plec_z_formy(slowo: str) -> str | None:
-    """Dopełniacz imienia: -a / -ego = mężczyzna, -y / -i = kobieta."""
-    if slowo.endswith(("ego", "a")):
-        return "M"
-    if slowo.endswith(("y", "i")):
-        return "K"
-    return None
-
-
-def mianownik(slowo: str, plec: str | None) -> str:
-    """Imię z dopełniacza do mianownika (Jana -> Jan, Marianny -> Marianna). Nieznane formy zostają bez zmian."""
-    if plec == "K":
-        return slowo[:-1] + "a" if slowo.endswith(("y", "i")) else slowo
-    if plec == "M":
-        if slowo in WYJATKI_MESKIE:
-            return WYJATKI_MESKIE[slowo]
-        if slowo.endswith("iego"):
-            return slowo[:-4] + "i"
-        if slowo.endswith("ego"):
-            return slowo[:-3] + "y"
-        if slowo.endswith("szka"):
-            return slowo[:-4] + "szek"
-        if slowo.endswith("a"):
-            return slowo[:-1]
-    return slowo
-
-
-def rodzice_z_opisu(opis: str) -> dict:
-    """'córka Jana (Joannes) Cichonia i Katarzyny (Catharina) z domu Grzebinoga' ->
-    imie_ojca=Jan, imie_matki=Katarzyna, nazwisko_matki=Grzebinoga."""
-    m = RE_KLUCZ_RODZICE.search(opis)
-    if not m:
-        return {}
-    poz = RE_PRZEDROSTEK.match(opis, m.end()).end()
-    osoby = []
-    p = RE_OSOBA.match(opis, poz)
-    if p:
-        osoby.append(p)
-        i = RE_I.match(opis, p.end())
-        if i:
-            p2 = RE_OSOBA.match(opis, i.end())
-            if p2:
-                osoby.append(p2)
-    wynik: dict = {}
-    for kolej, o in enumerate(osoby):
-        slowa = o["imie"].split()
-        plec = plec_z_formy(slowa[0])
-        if plec is None:  # nieznana forma: kolejność ojciec, matka
-            plec = "M" if kolej == 0 and len(osoby) == 2 else ("K" if kolej == 1 else None)
-        imie = " ".join(mianownik(s, plec) for s in slowa)
-        if plec == "M" and "imie_ojca" not in wynik:
-            wynik["imie_ojca"] = imie
-        elif plec == "K" and "imie_matki" not in wynik:
-            wynik["imie_matki"] = imie
-            nazwisko = o["pan"] or o["nazw"]
-            if nazwisko:
-                wynik["nazwisko_matki"] = nazwisko
-    return wynik
-
-
-def dodatkowe_z_opisu(opis: str) -> str | None:
-    """Reszta opisu od 'ur. w ...' (miejsce urodzenia, zaopatrzenie, kto pochował)."""
-    m = RE_UR.search(opis)
-    return opis[m.start():].strip() if m else None
-
-
 def rozdziel_imie_nazwisko(s: str) -> tuple[str | None, str | None]:
     """'Marianna Cichoń' -> ('Marianna', 'Cichoń'); 'Jan Kanty Nowak' -> ('Jan Kanty', 'Nowak')."""
     slowa = s.split()
@@ -392,8 +329,8 @@ def wykryj_kolumny(ws) -> dict:
             nazwa = "malzonek"
         elif "skan" in h1:
             nazwa = "skan"
-        elif "miejscowosc" in h1:
-            nazwa = "miejscowosc"
+        elif h1.startswith("kaplan"):
+            nazwa = "kaplan"
         elif h2 == "zgonu":
             nazwa = "data_zgonu"
         elif "pogrzeb" in h2:
@@ -458,7 +395,31 @@ class Raport:
         self.ostrzezenia.append(f"{gdzie}: {komunikat}")
 
 
-def wczytaj_plik(plik: Path, args, raport: Raport) -> list[dict]:
+def zbierz_znane(pliki: list[Path]) -> set[str]:
+    """Nazwiska w mianowniku znane z danych (potrzebne do odmiany nazwisk z opisów: Kukuły -> Kukuła)."""
+    teksty: list[str] = []
+    znane: set[str] = set()
+    for p in pliki:
+        if rozpoznaj_sciezke(p)[1] not in TYPY_OBSLUGIWANE:
+            continue
+        try:
+            ws = openpyxl.load_workbook(p, data_only=True).worksheets[0]
+            kol = wykryj_kolumny(ws)
+        except Exception:  # plik z innym układem zgłosi błąd przy właściwym wczytaniu
+            continue
+        for w in range(3, ws.max_row + 1):
+            o = tekst(ws.cell(w, kol["opis"]).value)
+            if o:
+                teksty.append(o)
+            for nazwa in ("osoba", "matka", "ojciec", "malzonek"):
+                v = tekst(ws.cell(w, kol[nazwa]).value) if nazwa in kol else None
+                if v and len(v.split()) >= 2:
+                    znane.add(v.split()[-1])
+    return znane | zbierz_znane_nazwiska(teksty)
+
+
+def wczytaj_plik(plik: Path, args, raport: Raport, znane: set[str] | None = None) -> list[dict]:
+    znane = znane or set()
     parafia, typ, rok_folder = rozpoznaj_sciezke(plik)
     if not parafia or not typ:
         raport.pliki_pominiete.append(f"{plik}: nie da się ustalić parafii/rodzaju ze ścieżki (oczekiwane <Parafia>/<Zgony>/<rok>/plik.xlsx)")
@@ -536,51 +497,86 @@ def wczytaj_plik(plik: Path, args, raport: Raport) -> list[dict]:
             raport.ostrz(nazwa_pliku, w, "zaznaczona i płeć męska, i żeńska")
         religia = "kat" if zaznaczone(komorka(w, "rel_kat")) else ("inna" if zaznaczone(komorka(w, "rel_inna")) else None)
 
-        czesci_uwag: list[str | None] = []
+        # ---- teksty: bez łaciny w nawiasach, miejscowości w miejscowniku (ur. w Przytkowicach)
+        opis_surowy = opis
+        opis = poprawione(opis_surowy)
         przyczyna = tekst(komorka(w, "przyczyna"))
-        if przyczyna and " | " in przyczyna:  # starszy układ: "przyczyna | kto pochował"
-            przyczyna, reszta = (s.strip() for s in przyczyna.split(" | ", 1))
-            czesci_uwag.append(reszta)
+        reszta_przyczyny = None
+        if przyczyna and " | " in przyczyna:  # starszy układ: "przyczyna | zaopatrzenie, kto pochował"
+            przyczyna, reszta_przyczyny = (s.strip() for s in przyczyna.split(" | ", 1))
+        przyczyna, reszta_przyczyny = poprawione(przyczyna), poprawione(reszta_przyczyny)
+        uwagi_jawne = None
         if not args.bez_uwag:
-            czesci_uwag += [tekst(ws.cell(w, c).value) for c in kol["uwagi"]]
-        uwagi = " | ".join(t for t in czesci_uwag if t) or None
+            czesci = [tekst(ws.cell(w, c).value) for c in kol["uwagi"]]
+            uwagi_jawne = poprawione(" | ".join(t for t in czesci if t) or None)
+        kaplan_jawny = poprawione(tekst(komorka(w, "kaplan")))
 
-        z_opisu = rozbierz_opis(opis)
+        # ---- osoba zmarła
+        z_opisu = rozbierz_opis(opis_surowy)
         imie, nazwisko = z_opisu.get("imie"), z_opisu.get("nazwisko")
         wg_rodzica = z_opisu.get("nazwisko_wg_rodzica")
-        nazwisko_w_akcie = None
+        if wg_rodzica and nazwisko:  # nazwisko z opisu rodziców bywa w dopełniaczu (Żaka -> Żak)
+            nazwisko = nazwisko_mianownik(nazwisko, znane)
+        opisowe = nazwisko  # nazwisko w opisie aktu (u zamężnych kobiet – po mężu)
+        nazwisko_w_akcie = nazwisko_auto = None
         jawna = tekst(komorka(w, "osoba"))  # kolumna "Imię nazwisko" w nowym układzie
+        matka_j, ojciec_j, malzonek_j = (tekst(komorka(w, k)) for k in ("matka", "ojciec", "malzonek"))
+        rodz = rodzina_z_opisu(opis_surowy, opisowe, plec, znane)
+        zamezna = plec == "K" and kobieta_zamezna(opis_surowy)
         if jawna:
             imie, nazwisko = rozdziel_imie_nazwisko(jawna)
             if len(jawna.split()) > 3:
                 raport.ostrz(nazwa_pliku, w, f"w kolumnie 'Imię nazwisko' jest więcej niż 3 wyrazy: '{jawna}'")
-            opisowe = z_opisu.get("nazwisko")
-            if opisowe and not wg_rodzica and nazwisko and zloz(opisowe) != zloz(nazwisko):
+            if opisowe and not wg_rodzica and (not nazwisko or zloz(opisowe) != zloz(nazwisko)):
                 nazwisko_w_akcie = opisowe  # np. nazwisko po mężu użyte w opisie aktu
             wg_rodzica = None
-        if not nazwisko:
+        elif zamezna:
+            # kobiety pod nazwiskiem panieńskim: wprost z opisu ("z domu X") albo = nazwisko ojca;
+            # gdy opis nie podaje ani jednego, ani drugiego – bez nazwiska
+            nazwisko = nazwisko_panienskie(opis_surowy)
+            if not nazwisko:
+                nazwisko = rodz.get("nazwisko_ojca")
+                nazwisko_auto = True if nazwisko else None
+            wg_rodzica = None
+            if opisowe and (not nazwisko or zloz(opisowe) != zloz(nazwisko)):
+                nazwisko_w_akcie = opisowe
+        if not nazwisko and not zamezna:
             raport.bez_nazwiska.append(f"{nazwa_pliku} w.{w}: {opis[:70]}")
 
-        # rodzice: z kolumn Mama / Tata, a gdy ich nie ma – wstępnie z opisu aktu
-        matka, ojciec = tekst(komorka(w, "matka")), tekst(komorka(w, "ojciec"))
+        # ---- rodzice i małżonek: z kolumn Excela, a gdy wiersz nie jest jeszcze przerobiony – wstępnie z opisu
         imie_ojca = imie_matki = nazwisko_matki = None
+        malzonek = malzonek_j
         rodzice_auto = None
-        if matka or ojciec:
-            if ojciec:
-                imie_ojca = rozdziel_imie_nazwisko(ojciec)[0]
-            if matka:
-                imie_matki, nazwisko_matki = rozdziel_imie_nazwisko(matka)
+        if jawna or matka_j or ojciec_j or malzonek_j:
+            if ojciec_j:
+                imie_ojca = rozdziel_imie_nazwisko(ojciec_j)[0]
+            if matka_j:
+                imie_matki, nazwisko_matki = rozdziel_imie_nazwisko(matka_j)
+            # komórka zaznaczona na żółto przez podpowiedz_excel.py = jeszcze niesprawdzona (strona pokaże ją kursywą)
+            zolte = {n for n in ("osoba", "matka", "ojciec", "malzonek") if n in kol and zolta(ws.cell(w, kol[n]))}
+            if zolte & {"matka", "ojciec", "malzonek"}:
+                rodzice_auto = True
+            if "osoba" in zolte and nazwisko:
+                nazwisko_auto = True
         else:
-            r = rodzice_z_opisu(opis)
-            imie_ojca, imie_matki, nazwisko_matki = r.get("imie_ojca"), r.get("imie_matki"), r.get("nazwisko_matki")
-            rodzice_auto = True if (imie_ojca or imie_matki) else None
+            imie_ojca, imie_matki, nazwisko_matki = rodz.get("imie_ojca"), rodz.get("imie_matki"), rodz.get("nazwisko_matki")
+            malzonek = rodz.get("malzonek")
+            rodzice_auto = True if (imie_ojca or imie_matki or malzonek) else None
 
-        # "Dodatkowe informacje": uwagi z Excela oraz reszta opisu od "ur. w ..." (jeśli uwagi jej jeszcze nie zawierają)
-        z_ur = dodatkowe_z_opisu(opis)
-        czesci_dod = [z_ur] if z_ur and not (uwagi and z_ur[:25] in uwagi) else []
-        if uwagi:
-            czesci_dod.append(uwagi)
-        dodatkowe = " | ".join(czesci_dod) or None
+        # ---- "Dodatkowe informacje" (bez kapłana) i "Kapłan"
+        if jawna or kaplan_jawny:
+            reszta, kaplan = uwagi_jawne, kaplan_jawny  # wiersz przerobiony ręcznie: bierzemy to, co wpisano w Excelu
+        else:
+            # stary układ: reszta opisu od "ur. w ...", reszta z kolumny przyczyny -> rozdzielone na uwagi i kapłana;
+            # notatki tłumacza (kolumna bez nagłówka) dopisujemy bez dzielenia
+            reszta, kaplan = rozdziel_kaplana(" ".join(t for t in (dodatkowe_z_opisu(opis), reszta_przyczyny) if t) or None)
+            if uwagi_jawne:
+                reszta = f"{reszta} {uwagi_jawne}" if reszta else uwagi_jawne
+        dodatkowe = reszta
+
+        skan = tekst(komorka(w, "skan"))
+        if skan and not skan.lower().startswith("http"):
+            skan = normalizuj_skan(skan)
 
         rekord = {
             "_wiersz": w,
@@ -593,27 +589,32 @@ def wczytaj_plik(plik: Path, args, raport: Raport) -> list[dict]:
             "dom": tekst(komorka(w, "dom")),
             "imie": imie,
             "nazwisko": nazwisko,
+            "nazwisko_auto": nazwisko_auto,
             "nazwisko_wg_rodzica": wg_rodzica,
             "nazwisko_w_akcie": nazwisko_w_akcie,
             "imie_ojca": imie_ojca,
             "imie_matki": imie_matki,
             "nazwisko_matki": nazwisko_matki,
             "rodzice_auto": rodzice_auto,
-            "matka": matka,
-            "ojciec": ojciec,
-            "malzonek": tekst(komorka(w, "malzonek")),
-            "miejscowosc": tekst(komorka(w, "miejscowosc")),
+            "matka": matka_j,
+            "ojciec": ojciec_j,
+            "malzonek": malzonek,
             "plec": plec,
             "religia": religia,
             "data_ur": data_ur,
-            "wiek": wiek_tekst,
+            "wiek": wiek_pelne_lata(wiek_tekst),
             "wiek_lat": wiek_w_latach(wiek_tekst),
             "przyczyna": przyczyna,
-            "miejsce_ur": z_opisu.get("miejsce_ur"),
             "opis": opis,
-            "uwagi": uwagi,
             "dodatkowe": dodatkowe,
-            "skan": normalizuj_skan(komorka(w, "skan")),
+            "kaplan": kaplan,
+            "skan": skan,
+            # dane pomocnicze dla podpowiedz_excel.py (nie trafiają do JSON)
+            "_surowe": {
+                "opis_surowy": opis_surowy, "zgon": komorka(w, "data_zgonu"), "pogrzeb": komorka(w, "data_pogrzebu"),
+                "wiek_tekst": wiek_tekst, "jawna": jawna, "rodz": rodz, "zamezna": zamezna, "opisowe": opisowe,
+                "uwagi_jawne": uwagi_jawne, "kaplan_jawny": kaplan_jawny, "skan": skan, "przyczyna": przyczyna,
+            },
         }
         rekordy.append({k: v for k, v in rekord.items() if v is not None})
     return rekordy
@@ -627,7 +628,7 @@ def zbierz_pliki(sciezki: list[Path]) -> list[Path]:
         if s.is_file():
             pliki.append(s)
         elif s.is_dir():
-            pliki.extend(p for p in s.rglob("*.xlsx"))
+            pliki.extend(p for p in s.rglob("*.xlsx") if "_nowy" not in p.stem)  # pomijamy pliki z podpowiedz_excel.py
         else:
             sys.exit(f"Nie znaleziono: {s}")
     return sorted({p.resolve() for p in pliki if not p.name.startswith("~$")})
@@ -666,9 +667,10 @@ def main() -> None:
         sys.exit("Nie znaleziono żadnych plików .xlsx.")
 
     raport = Raport()
+    znane = zbierz_znane(pliki)
     zbiory: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for p in pliki:
-        for r in wczytaj_plik(p, args, raport):
+        for r in wczytaj_plik(p, args, raport, znane):
             zbiory[(r["parafia"], r["typ"])].append(r)
 
     # identyfikatory (unikalne nawet gdy numer aktu się powtórzy między plikami)
@@ -687,7 +689,7 @@ def main() -> None:
                 raport.ostrz(f"{parafia}/{r['rok']}", None, f"powtórzony numer aktu {r.get('nr')} – nadano id {r['id']}")
         # id na początek rekordu, bez pól roboczych
         for i, r in enumerate(rekordy):
-            rekordy[i] = {"id": r["id"], **{k: v for k, v in r.items() if k not in ("id", "_wiersz")}}
+            rekordy[i] = {"id": r["id"], **{k: v for k, v in r.items() if k != "id" and not k.startswith("_")}}
 
     # ----- raport
     razem = sum(len(v) for v in zbiory.values())
@@ -702,9 +704,9 @@ def main() -> None:
     bez = len(raport.bez_nazwiska)
     print(f"Bez rozpoznanego nazwiska: {bez} z {razem}")
     wszystkie = [r for v in zbiory.values() for r in v]
-    z_excela = sum(1 for r in wszystkie if (r.get("matka") or r.get("ojciec")))
+    z_excela = sum(1 for r in wszystkie if (r.get("matka") or r.get("ojciec")) and not r.get("rodzice_auto"))
     z_opisu_n = sum(1 for r in wszystkie if r.get("rodzice_auto"))
-    print(f"Rodzice: z kolumn Excela {z_excela}, wstępnie z opisu {z_opisu_n}, brak {razem - z_excela - z_opisu_n}"
+    print(f"Rodzice: z kolumn Excela {z_excela}, wstępnie (z opisu lub żółte do sprawdzenia) {z_opisu_n}, brak {razem - z_excela - z_opisu_n}"
           f"  |  imię ojca: {sum(1 for r in wszystkie if r.get('imie_ojca'))}, imię matki: {sum(1 for r in wszystkie if r.get('imie_matki'))},"
           f" nazwisko matki: {sum(1 for r in wszystkie if r.get('nazwisko_matki'))}")
     print(f"Ostrzeżenia: {len(raport.ostrzezenia)}")
