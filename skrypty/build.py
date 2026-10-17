@@ -243,6 +243,94 @@ def rozbierz_opis(opis: str) -> dict:
     return wynik
 
 
+# ---------------------------------------------------------------- rodzice z opisu (heurystyka)
+# Używane tylko dla aktów, w których w Excelu nie ma jeszcze kolumn Mama / Tata.
+# Wynik jest oznaczany jako "z opisu" i wymaga sprawdzenia.
+
+WYJATKI_MESKIE = {
+    "Franciszka": "Franciszek", "Marka": "Marek", "Jacka": "Jacek", "Pawła": "Paweł",
+    "Wawrzyńca": "Wawrzyniec", "Walentego": "Walenty", "Wincentego": "Wincenty",
+    "Ignacego": "Ignacy", "Jerzego": "Jerzy", "Antoniego": "Antoni", "Konstantego": "Konstanty",
+    "Kuby": "Kuba", "Marcina": "Marcin", "Bartłomieja": "Bartłomiej", "Błażeja": "Błażej",
+    "Józefa": "Józef", "Łukasza": "Łukasz", "Michała": "Michał", "Stanisława": "Stanisław",
+}
+RE_KLUCZ_RODZICE = re.compile(r"\b(?:syn|córka|córką|synem|dziecko)\b")
+RE_PRZEDROSTEK = re.compile(r"\s*(?:(?:nie)?ślubn\w+\s+|prawowit\w+\s+)*")
+RE_I = re.compile(r"\s*,?\s*i\s+")
+RE_OSOBA = re.compile(
+    rf"(?P<imie>{SLOWO}(?:\s+{SLOWO})?)\s*\((?P<lac>[^)]*)\)(?:\s+(?P<nazw>{SLOWO}))?"
+    rf"(?:\s+zwan\w+\s+\([^)]*\)\s+{SLOWO})?"
+    rf"(?:\s*,\s*(?P<zaw>[{LOW}][^,.;()\[\]]*?)\s*,)?(?:\s+z\s+domu\s+(?P<pan>{SLOWO}))?"
+)
+RE_UR = re.compile(r"\bur\.\s+(?:w|we|na)\b")
+
+
+def plec_z_formy(slowo: str) -> str | None:
+    """Dopełniacz imienia: -a / -ego = mężczyzna, -y / -i = kobieta."""
+    if slowo.endswith(("ego", "a")):
+        return "M"
+    if slowo.endswith(("y", "i")):
+        return "K"
+    return None
+
+
+def mianownik(slowo: str, plec: str | None) -> str:
+    """Imię z dopełniacza do mianownika (Jana -> Jan, Marianny -> Marianna). Nieznane formy zostają bez zmian."""
+    if plec == "K":
+        return slowo[:-1] + "a" if slowo.endswith(("y", "i")) else slowo
+    if plec == "M":
+        if slowo in WYJATKI_MESKIE:
+            return WYJATKI_MESKIE[slowo]
+        if slowo.endswith("iego"):
+            return slowo[:-4] + "i"
+        if slowo.endswith("ego"):
+            return slowo[:-3] + "y"
+        if slowo.endswith("szka"):
+            return slowo[:-4] + "szek"
+        if slowo.endswith("a"):
+            return slowo[:-1]
+    return slowo
+
+
+def rodzice_z_opisu(opis: str) -> dict:
+    """'córka Jana (Joannes) Cichonia i Katarzyny (Catharina) z domu Grzebinoga' ->
+    imie_ojca=Jan, imie_matki=Katarzyna, nazwisko_matki=Grzebinoga."""
+    m = RE_KLUCZ_RODZICE.search(opis)
+    if not m:
+        return {}
+    poz = RE_PRZEDROSTEK.match(opis, m.end()).end()
+    osoby = []
+    p = RE_OSOBA.match(opis, poz)
+    if p:
+        osoby.append(p)
+        i = RE_I.match(opis, p.end())
+        if i:
+            p2 = RE_OSOBA.match(opis, i.end())
+            if p2:
+                osoby.append(p2)
+    wynik: dict = {}
+    for kolej, o in enumerate(osoby):
+        slowa = o["imie"].split()
+        plec = plec_z_formy(slowa[0])
+        if plec is None:  # nieznana forma: kolejność ojciec, matka
+            plec = "M" if kolej == 0 and len(osoby) == 2 else ("K" if kolej == 1 else None)
+        imie = " ".join(mianownik(s, plec) for s in slowa)
+        if plec == "M" and "imie_ojca" not in wynik:
+            wynik["imie_ojca"] = imie
+        elif plec == "K" and "imie_matki" not in wynik:
+            wynik["imie_matki"] = imie
+            nazwisko = o["pan"] or o["nazw"]
+            if nazwisko:
+                wynik["nazwisko_matki"] = nazwisko
+    return wynik
+
+
+def dodatkowe_z_opisu(opis: str) -> str | None:
+    """Reszta opisu od 'ur. w ...' (miejsce urodzenia, zaopatrzenie, kto pochował)."""
+    m = RE_UR.search(opis)
+    return opis[m.start():].strip() if m else None
+
+
 def rozdziel_imie_nazwisko(s: str) -> tuple[str | None, str | None]:
     """'Marianna Cichoń' -> ('Marianna', 'Cichoń'); 'Jan Kanty Nowak' -> ('Jan Kanty', 'Nowak')."""
     slowa = s.split()
@@ -304,6 +392,8 @@ def wykryj_kolumny(ws) -> dict:
             nazwa = "malzonek"
         elif "skan" in h1:
             nazwa = "skan"
+        elif "miejscowosc" in h1:
+            nazwa = "miejscowosc"
         elif h2 == "zgonu":
             nazwa = "data_zgonu"
         elif "pogrzeb" in h2:
@@ -471,6 +561,27 @@ def wczytaj_plik(plik: Path, args, raport: Raport) -> list[dict]:
         if not nazwisko:
             raport.bez_nazwiska.append(f"{nazwa_pliku} w.{w}: {opis[:70]}")
 
+        # rodzice: z kolumn Mama / Tata, a gdy ich nie ma – wstępnie z opisu aktu
+        matka, ojciec = tekst(komorka(w, "matka")), tekst(komorka(w, "ojciec"))
+        imie_ojca = imie_matki = nazwisko_matki = None
+        rodzice_auto = None
+        if matka or ojciec:
+            if ojciec:
+                imie_ojca = rozdziel_imie_nazwisko(ojciec)[0]
+            if matka:
+                imie_matki, nazwisko_matki = rozdziel_imie_nazwisko(matka)
+        else:
+            r = rodzice_z_opisu(opis)
+            imie_ojca, imie_matki, nazwisko_matki = r.get("imie_ojca"), r.get("imie_matki"), r.get("nazwisko_matki")
+            rodzice_auto = True if (imie_ojca or imie_matki) else None
+
+        # "Dodatkowe informacje": uwagi z Excela oraz reszta opisu od "ur. w ..." (jeśli uwagi jej jeszcze nie zawierają)
+        z_ur = dodatkowe_z_opisu(opis)
+        czesci_dod = [z_ur] if z_ur and not (uwagi and z_ur[:25] in uwagi) else []
+        if uwagi:
+            czesci_dod.append(uwagi)
+        dodatkowe = " | ".join(czesci_dod) or None
+
         rekord = {
             "_wiersz": w,
             "parafia": parafia,
@@ -484,9 +595,14 @@ def wczytaj_plik(plik: Path, args, raport: Raport) -> list[dict]:
             "nazwisko": nazwisko,
             "nazwisko_wg_rodzica": wg_rodzica,
             "nazwisko_w_akcie": nazwisko_w_akcie,
-            "matka": tekst(komorka(w, "matka")),
-            "ojciec": tekst(komorka(w, "ojciec")),
+            "imie_ojca": imie_ojca,
+            "imie_matki": imie_matki,
+            "nazwisko_matki": nazwisko_matki,
+            "rodzice_auto": rodzice_auto,
+            "matka": matka,
+            "ojciec": ojciec,
             "malzonek": tekst(komorka(w, "malzonek")),
+            "miejscowosc": tekst(komorka(w, "miejscowosc")),
             "plec": plec,
             "religia": religia,
             "data_ur": data_ur,
@@ -496,6 +612,7 @@ def wczytaj_plik(plik: Path, args, raport: Raport) -> list[dict]:
             "miejsce_ur": z_opisu.get("miejsce_ur"),
             "opis": opis,
             "uwagi": uwagi,
+            "dodatkowe": dodatkowe,
             "skan": normalizuj_skan(komorka(w, "skan")),
         }
         rekordy.append({k: v for k, v in rekord.items() if v is not None})
@@ -584,6 +701,12 @@ def main() -> None:
         print("POMINIĘTO", p)
     bez = len(raport.bez_nazwiska)
     print(f"Bez rozpoznanego nazwiska: {bez} z {razem}")
+    wszystkie = [r for v in zbiory.values() for r in v]
+    z_excela = sum(1 for r in wszystkie if (r.get("matka") or r.get("ojciec")))
+    z_opisu_n = sum(1 for r in wszystkie if r.get("rodzice_auto"))
+    print(f"Rodzice: z kolumn Excela {z_excela}, wstępnie z opisu {z_opisu_n}, brak {razem - z_excela - z_opisu_n}"
+          f"  |  imię ojca: {sum(1 for r in wszystkie if r.get('imie_ojca'))}, imię matki: {sum(1 for r in wszystkie if r.get('imie_matki'))},"
+          f" nazwisko matki: {sum(1 for r in wszystkie if r.get('nazwisko_matki'))}")
     print(f"Ostrzeżenia: {len(raport.ostrzezenia)}")
     limit = None if args.szczegoly else 15
     for o in raport.ostrzezenia[:limit]:

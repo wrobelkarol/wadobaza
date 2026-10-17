@@ -4,7 +4,7 @@
 
   var W = window.Wadobaza;
   var REPO_ISSUES = 'https://github.com/wrobelkarol/wadobaza/issues/new';
-  var KOLUMNY = 15; // liczba kolumn tabeli (do colspan wiersza ze szczegółami)
+  var KOLUMNY = 12; // liczba kolumn tabeli (do colspan wiersza ze szczegółami)
 
   /* ------------------------------------------------------------ tekst */
 
@@ -87,9 +87,9 @@
     r._pid = zbior.parafia_id;
     r._n = tokens(r.nazwisko).concat(tokens(r.nazwisko_w_akcie));
     r._i = tokens(r.imie);
-    r._rodz = tokens(r.matka).concat(tokens(r.ojciec), tokens(r.malzonek));
+    r._rodz = tokens(r.matka).concat(tokens(r.ojciec), tokens(r.malzonek), tokens(r.imie_ojca), tokens(r.imie_matki), tokens(r.nazwisko_matki));
     r._opis = tokens(r.opis);
-    r._calosc = r._opis.concat(r._rodz, tokens(r.przyczyna), tokens(r.uwagi), tokens(r.miejsce_ur), tokens(r.imie), tokens(r.nazwisko));
+    r._calosc = r._opis.concat(r._rodz, tokens(r.przyczyna), tokens(r.uwagi), tokens(r.dodatkowe), tokens(r.miejscowosc), tokens(r.miejsce_ur), tokens(r.imie), tokens(r.nazwisko));
     return r;
   }
 
@@ -141,13 +141,11 @@
     data_pogrzebu: function (r) { return r.data_pogrzebu || null; },
     nazwisko: function (r) { return r.nazwisko || null; },
     imie: function (r) { return r.imie || null; },
-    matka: function (r) { return r.matka || null; },
-    ojciec: function (r) { return r.ojciec || null; },
-    malzonek: function (r) { return r.malzonek || null; },
-    wiek: function (r) { return r.wiek_lat; },
-    dom: function (r) { return r.dom || null; },
-    plec: function (r) { return r.plec || null; },
-    przyczyna: function (r) { return r.przyczyna || null; }
+    imie_ojca: function (r) { return r.imie_ojca || null; },
+    imie_matki: function (r) { return r.imie_matki || null; },
+    nazwisko_matki: function (r) { return r.nazwisko_matki || null; },
+    miejscowosc: function (r) { return r.miejscowosc || null; },
+    dodatkowe: function (r) { return r.dodatkowe || null; }
   };
   function porownaj(a, b) {
     if (typeof a === 'number' && typeof b === 'number') { return a - b; }
@@ -237,22 +235,34 @@
 
   function szczegoly(r, szukane) {
     var fakty = [];
-    function fakt(etykieta, wartosc) { if (wartosc) { fakty.push(el('div', null, el('dt', { text: etykieta }), el('dd', { text: wartosc }))); } }
-    fakt('Data zgonu', W.formatData(r.data_zgonu) || 'niewidoczna na skanie');
-    fakt('Data pogrzebu', W.formatData(r.data_pogrzebu));
-    fakt('Data urodzenia', W.formatData(r.data_ur));
-    fakt('Wiek zmarłego', r.wiek);
+    // Pola w kolejności i pod nazwami kolumn z Excela; puste pokazujemy jako „—”, żeby widać było, czego brakuje.
+    function fakt(etykieta, wartosc, zawsze, klasa) {
+      if (!wartosc && !zawsze) { return; }
+      var dd = el('dd', { text: wartosc || '—' });
+      if (klasa && wartosc) { dd.className = klasa; }
+      fakty.push(el('div', null, el('dt', { text: etykieta }), dd));
+    }
+    var auto = !!r.rodzice_auto;
+    var mama = r.matka || [r.imie_matki, r.nazwisko_matki].filter(Boolean).join(' ');
+    var tata = r.ojciec || r.imie_ojca || '';
+    fakt('Liczba porządkowa', r.nr != null ? String(r.nr) : '', true);
+    fakt('Zgonu', W.formatData(r.data_zgonu) || 'niewidoczna na skanie', true);
+    fakt('Pogrzebu', W.formatData(r.data_pogrzebu), true);
+    fakt('Numer domu', r.dom, true);
+    fakt('Imię nazwisko', [r.imie, r.nazwisko].filter(Boolean).join(' ') + (r.nazwisko_wg_rodzica ? ' (nazwisko z opisu rodziców)' : ''), true);
+    fakt('Mama', mama && auto ? mama + ' (wstępnie z opisu)' : mama, true, auto ? 'auto' : '');
+    fakt('Tata', tata && auto ? tata + ' (wstępnie z opisu)' : tata, true, auto ? 'auto' : '');
+    fakt('Małżonek', r.malzonek, true);
+    fakt('Religia', r.religia === 'kat' ? 'katolicka' : (r.religia === 'inna' ? 'inna' : ''), true);
+    fakt('Płeć', r.plec === 'K' ? 'żeńska' : (r.plec === 'M' ? 'męska' : ''), true);
+    fakt('Wiek zmarłego', r.wiek, true);
+    fakt('Przyczyna zgonu', r.przyczyna, true);
+    fakt('Data urodzenia', W.formatData(r.data_ur), true);
+    fakt('Uwagi', r.uwagi, true);
+    fakt('Miejscowość', r.miejscowosc, true);
+    fakt('Parafia', r.parafia);
     fakt('Nazwisko w opisie aktu', r.nazwisko_w_akcie);
-    fakt('Mama', r.matka);
-    fakt('Tata', r.ojciec);
-    fakt('Małżonek', r.malzonek);
-    fakt('Miejsce urodzenia', r.miejsce_ur);
-    fakt('Numer domu', r.dom);
-    fakt('Płeć', r.plec === 'K' ? 'kobieta' : (r.plec === 'M' ? 'mężczyzna' : ''));
-    fakt('Religia', r.religia === 'kat' ? 'katolicka' : (r.religia === 'inna' ? 'inna' : ''));
-    fakt('Przyczyna zgonu', r.przyczyna);
-    fakt('Numer aktu w księdze', r.nr != null ? String(r.nr) : '');
-    fakt('Uwagi', r.uwagi);
+    fakt('Miejsce urodzenia (z opisu)', r.miejsce_ur);
 
     var link = location.origin + location.pathname + '?id=' + encodeURIComponent(r.id);
     var kopiuj = el('button', { type: 'button' }, 'Skopiuj link do tego aktu');
@@ -281,22 +291,28 @@
       nazwisko = el('span', { title: 'Nazwisko z opisu rodziców – w akcie brak nazwiska przy dziecku' }, nazwisko, el('span', { class: 'wzgl' }, ' (wg rodzica)'));
     }
     var przycisk = el('button', { type: 'button', class: 'rozwin', 'aria-expanded': otwarty ? 'true' : 'false', 'aria-label': 'Pokaż szczegóły aktu' });
+    // imię/nazwisko rodziców wyciągnięte z opisu są oznaczone kursywą (jeszcze niesprawdzone)
+    var klasaRodz = r.rodzice_auto ? ' auto' : '';
+    var podpowiedz = r.rodzice_auto ? 'Wstępnie wyciągnięte z opisu aktu – do sprawdzenia' : '';
+    function rodz(klasa, wartosc) {
+      var td = komorka(klasa + klasaRodz + ' c-sr', wartosc);
+      if (wartosc && podpowiedz) { td.title = podpowiedz; }
+      return td;
+    }
+    var dod = r.dodatkowe ? el('div', { class: 'dod', title: r.dodatkowe }, r.dodatkowe) : null;
     var tr = el('tr', { class: 'wiersz' },
       el('td', null, przycisk),
-      komorka('', r.parafia),
       komorka('liczba', String(r.rok)),
-      komorka('liczba ukryj-m', r.nr != null ? String(r.nr) : ''),
-      komorka('data ukryj-m', W.formatData(r.data_zgonu), 'data zgonu niewidoczna na skanie'),
+      komorka('data c-sr', W.formatData(r.data_zgonu), 'data zgonu niewidoczna na skanie'),
       komorka('data', W.formatData(r.data_pogrzebu), 'brak daty pogrzebu'),
-      komorka('nazwisko', nazwisko),
       komorka('', r.imie ? podswietl(r.imie, szukane) : null),
-      komorka('ukryj-m', r.matka),
-      komorka('ukryj-m', r.ojciec),
-      komorka('ukryj-m', r.malzonek),
-      komorka('ukryj-m', r.wiek || ''),
-      komorka('liczba ukryj-m', r.dom),
-      komorka('ukryj-m', r.plec),
-      komorka('przyczyna-kom ukryj-m', r.przyczyna)
+      komorka('nazwisko', nazwisko),
+      rodz('', r.imie_ojca),
+      rodz('', r.imie_matki),
+      rodz('', r.nazwisko_matki),
+      komorka('c-duze', r.parafia),
+      komorka('c-duze', r.miejscowosc),
+      komorka('c-dod', dod)
     );
     var det = el('tr', { class: 'szczegoly' });
     det.hidden = !otwarty;

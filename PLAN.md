@@ -109,7 +109,13 @@ GitHub Pages z folderu `docs`, gałąź `main`). Szczegóły:
       sortowanie po każdej kolumnie; szczegóły aktu; link do pojedynczego aktu; adres z parametrami
 - [x] strona „O projekcie” z zestawieniem zakresu bazy
 - [x] repozytorium na GitHubie + GitHub Pages
-- [x] tabela jak w Excelu: Mama, Tata, Małżonek, osobno data zgonu i pogrzebu; nazwisko w opisie aktu (np. po mężu) osobno
+- [x] tabela (bez suwaka, z przyklejonym nagłówkiem): Rok, Data zgonu, Data pogrzebu, Imię, Nazwisko, Imię ojca, Imię matki,
+      Nazwisko matki, Parafia, Miejscowość, Dodatkowe informacje; po rozwinięciu wszystkie pola z Excela
+- [x] imię ojca, imię matki i nazwisko matki: z kolumn Mama/Tata, a gdy ich brak – wstępnie z opisu aktu (kursywą, do sprawdzenia);
+      dla 212 aktów rozpoznano rodziców w 169 (pozostałe to dorośli bez rodziców w opisie)
+- [ ] Miejscowość: w Excelu nie ma takiej kolumny (z opisu da się wyciągnąć tylko miejsce urodzenia) – do ustalenia
+- [ ] kobiety pod nazwiskiem panieńskim: przy starym układzie opis podaje nazwisko po mężu, a nazwisko ojca w dopełniaczu;
+      pełna zgodność dopiero po wypełnieniu kolumny „Imię nazwisko” w Excelu (opcja: skrypt podpowiadający wartości do sprawdzenia)
 - [ ] kafelek w portfolio `wrobelkarol.github.io` (czeka na zgodę na zmianę w tamtym repo)
 - [ ] linki do skanów w `dane/zrodla.json`: jest szablon dla 1941 (id=5557, sygn. 5500); brak dla 1890, 1891, 1939
 - [ ] kolumna „Skan” w Excelu (numer zdjęcia), żeby akt linkował do konkretnego zdjęcia

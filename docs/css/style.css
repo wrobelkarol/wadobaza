@@ -97,14 +97,23 @@ main { padding-top: 20px; padding-bottom: 32px; }
 .na-stronie select { font: inherit; padding: 6px 8px; border: 1px solid var(--linia); border-radius: 6px; background: var(--panel); color: var(--tusz); }
 .komunikat { background: var(--akcent-jasny); border-left: 4px solid var(--akcent); padding: 12px 16px; border-radius: 4px; margin: 8px 0 16px; }
 
-.tabela-opakowanie { overflow-x: auto; background: var(--panel); border: 1px solid var(--linia); border-radius: 8px; box-shadow: var(--cien); }
-.tabela { width: 100%; border-collapse: collapse; font-size: .93rem; }
-.tabela th, .tabela td { padding: 9px 10px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--linia); }
-.tabela thead th { background: var(--akcent-jasny); white-space: nowrap; padding: 0; position: sticky; top: 0; }
-.tabela thead th.kol-rozwin { width: 38px; }
+/* Tabela mieści się na stronie bez suwaka poziomego (stała szerokość kolumn, zawijanie tekstu,
+   kolumny mniej ważne chowają się na wąskich ekranach). Brak overflow:auto pozwala nagłówkom
+   przyklejać się do góry okna przy przewijaniu. */
+.tabela-opakowanie { background: var(--panel); border: 1px solid var(--linia); border-radius: 8px; box-shadow: var(--cien); overflow: clip; }
+@supports not (overflow: clip) { .tabela-opakowanie { overflow: visible; } }
+.tabela { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: .92rem; }
+.tabela th, .tabela td { padding: 9px 8px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--linia); overflow-wrap: anywhere; }
+.tabela thead th { background: var(--akcent-jasny); padding: 0; position: sticky; top: 0; z-index: 3; box-shadow: 0 1px 0 var(--linia); font-size: .88rem; }
+.tabela th.k-rozwin { width: 36px; }
+.tabela th.k-rok { width: 56px; }
+.tabela th.k-data { width: 96px; }
+.tabela th.k-imie { width: 98px; }
+.tabela th.k-nazw { width: 118px; }
+.tabela th.k-par { width: 102px; }
 .tabela thead button {
   all: unset; box-sizing: border-box; display: flex; width: 100%; align-items: center; gap: 4px;
-  padding: 10px; font-weight: 700; cursor: pointer; color: var(--tusz);
+  padding: 10px 8px; font-weight: 700; cursor: pointer; color: var(--tusz); line-height: 1.2;
 }
 .tabela thead button:hover { color: var(--akcent); }
 .tabela thead button:focus-visible { outline: 3px solid var(--fokus); outline-offset: -3px; }
@@ -115,7 +124,8 @@ main { padding-top: 20px; padding-bottom: 32px; }
 .tabela td.liczba, .tabela td.data { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tabela td.nazwisko { font-weight: 700; }
 .tabela td.brak { color: var(--przygaszony); }
-.tabela .przyczyna-kom { max-width: 26ch; }
+.tabela td.auto { font-style: italic; color: var(--przygaszony); }
+.tabela .dod { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: .85rem; line-height: 1.4; }
 .rozwin {
   all: unset; box-sizing: border-box; width: 26px; height: 26px; display: grid; place-items: center;
   border-radius: 4px; cursor: pointer; color: var(--akcent); font-weight: 700;
@@ -126,7 +136,8 @@ main { padding-top: 20px; padding-bottom: 32px; }
 .rozwin[aria-expanded="true"]::before { content: "–"; }
 .wzgl { font-size: .75em; font-weight: 400; color: var(--przygaszony); }
 
-.szczegoly > td { background: var(--zebra); padding: 14px 16px 18px 48px; }
+.szczegoly > td { background: var(--zebra); padding: 14px 16px 18px 16px; }
+.szczegoly .auto { font-style: italic; }
 .opis-aktu { margin: 0 0 12px; font-family: var(--szeryf); font-size: 1.02rem; line-height: 1.6; max-width: 90ch; }
 .fakty { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px 20px; margin: 0 0 12px; }
 .fakty div { min-width: 0; }
@@ -150,10 +161,22 @@ mark { background: var(--zaznacz); color: inherit; padding: 0 1px; border-radius
 .stopka { border-top: 1px solid var(--linia); padding: 18px 0 28px; color: var(--przygaszony); font-size: .88rem; }
 .stopka p { margin: 4px 0; }
 
+/* kolumny według ważności: im węższy ekran, tym mniej kolumn w tabeli (resztę widać po rozwinięciu aktu) */
+@media (max-width: 1099px) { .c-duze { display: none; } }
+@media (max-width: 999px) { .c-sr { display: none; } }
+@media (max-width: 639px) {
+  .c-dod { display: none; }
+  .tabela { font-size: .88rem; }
+  .tabela th, .tabela td { padding: 8px 5px; }
+  .tabela thead button { padding: 9px 5px; }
+  .tabela th.k-rozwin { width: 30px; }
+  .tabela th.k-rok { width: 46px; }
+  .tabela th.k-data { width: 78px; }
+  .tabela th.k-imie { width: 25%; }
+  .tabela th.k-nazw { width: 30%; }
+}
 @media (max-width: 760px) {
-  .ukryj-m { display: none; }
   .pole.szerokie { grid-column: 1 / -1; }
-  .szczegoly > td { padding-left: 16px; }
   .marka-nazwa { font-size: 1.6rem; }
 }
 @media (prefers-reduced-motion: no-preference) {
