@@ -107,7 +107,7 @@ def przygotuj_wiersz(rek: dict) -> dict:
         wart["matka"], wart["ojciec"], wart["malzonek"] = rek.get("matka"), rek.get("ojciec"), rek.get("malzonek")
     else:
         wart["matka"] = pelne(rek.get("imie_matki"), rek.get("nazwisko_matki"))
-        wart["ojciec"] = pelne(rek.get("imie_ojca"), rek.get("nazwisko"))
+        wart["ojciec"] = pelne(rek["imie_ojca"], rek.get("nazwisko")) if rek.get("imie_ojca") else None
         wart["malzonek"] = rek.get("malzonek")
         zolte.update(k for k in ("matka", "ojciec", "malzonek") if wart[k])
     wart["rel_kat"] = 1 if rek.get("religia") == "kat" else None
