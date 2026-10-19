@@ -1,6 +1,9 @@
 {
   "wygenerowano": "2026-10-19",
   "max_rok": 1945,
+  "max_rok_typ": {
+    "urodzenia": 1926
+  },
   "licencja": {
     "nazwa": "CC BY-NC 4.0",
     "url": "https://creativecommons.org/licenses/by-nc/4.0/deed.pl"

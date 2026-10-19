@@ -43,6 +43,7 @@ PLIK_ZRODEL_SKANOW = KORZEN / "dane" / "zrodla.json"
 PLIK_LISTY_ZRODEL = Path(__file__).resolve().parent / "zrodla.txt"
 
 MAX_ROK_DOMYSLNIE = 1945
+MAX_ROK_TYPU = {"urodzenia": 1926}  # narodziny: osoby mogą jeszcze żyć, więc ostrzejszy limit niż dla pozostałych aktów
 LICENCJA = {
     "nazwa": "CC BY-NC 4.0",
     "url": "https://creativecommons.org/licenses/by-nc/4.0/deed.pl",
@@ -477,7 +478,7 @@ def wczytaj_plik(plik: Path, args, raport: Raport, znane: set[str] | None = None
             wiek_tekst = wiek_tekst or t
 
         rok_zdarzenia = rok_z_daty(zgon) or rok_z_daty(pogrzeb) or rok
-        if rok_zdarzenia > args.max_rok:
+        if rok_zdarzenia > min(args.max_rok, MAX_ROK_TYPU.get(typ, args.max_rok)):
             raport.odrzucone_rok[rok_zdarzenia] += 1
             continue
 
@@ -756,6 +757,7 @@ def main() -> None:
     manifest = {
         "wygenerowano": dt.date.today().isoformat(),
         "max_rok": args.max_rok,
+        "max_rok_typ": MAX_ROK_TYPU,
         "licencja": LICENCJA,
         "zbiory": manifest_zbiory,
         "zrodla": zrodla,

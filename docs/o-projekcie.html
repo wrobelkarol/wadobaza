@@ -60,7 +60,8 @@
 
     <h2>Zasady i ochrona danych osobowych</h2>
     <ul>
-      <li>Publikuję tylko akty do roku <strong id="max-rok">1945</strong>.</li>
+      <li>Publikuję tylko akty do roku <strong id="max-rok">1945</strong>.
+        Z wyłączeniem narodzin, które są do <strong id="max-rok-urodzenia">1926</strong> r.</li>
       <li>Tłumaczenia mogą zawierać błędy – dawne pismo bywa nieczytelne. Wątpliwe miejsca oznaczam w
         uwagach lub znakiem zapytania w nawiasie kwadratowym. Zawsze warto sprawdzić skan.</li>
       <li>Jeśli któryś zapis jest błędny albo ktoś z rodziny prosi o jego wycofanie,
@@ -127,6 +128,9 @@
         p.textContent = 'Razem ' + razem + ' ' + W.liczebnik(razem, 'akt', 'akty', 'aktów') + '. Stan na ' + W.formatData(m.wygenerowano) + '.';
         cel.appendChild(p);
         document.getElementById('max-rok').textContent = m.max_rok;
+        if (m.max_rok_typ && m.max_rok_typ.urodzenia) {
+          document.getElementById('max-rok-urodzenia').textContent = m.max_rok_typ.urodzenia;
+        }
         if (m.licencja) {
           var a = document.getElementById('licencja');
           a.textContent = m.licencja.nazwa; a.href = m.licencja.url;
