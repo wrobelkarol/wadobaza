@@ -117,6 +117,7 @@ def przygotuj_wiersz(rek: dict) -> dict:
     wart["wiek"] = s["wiek_tekst"]
     wart["przyczyna"] = rek.get("przyczyna")
     wart["data_ur"] = format_daty(rek.get("data_ur"))
+    wart["data_slubu"] = format_daty(rek.get("data_slubu"))  # wpisze się tylko, jeśli wzór ma kolumnę "Data ślubu"
     wart["uwagi_kol"] = rek.get("dodatkowe")
     wart["skan"] = rek.get("skan")
     wart["kaplan"] = rek.get("kaplan")
@@ -158,7 +159,7 @@ def zrob_plik(zrodlo: Path, znane: set[str]) -> None:
         r = 3 + i
         wiersz = przygotuj_wiersz(rek)
         for nazwa, v in wiersz["wart"].items():
-            if v in (None, ""):
+            if v in (None, "") or nazwa not in kol:
                 continue
             cell = ws.cell(r, kol[nazwa])
             if isinstance(cell, MergedCell):

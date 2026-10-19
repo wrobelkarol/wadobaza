@@ -331,6 +331,8 @@ def wykryj_kolumny(ws) -> dict:
             nazwa = "skan"
         elif h1.startswith("kaplan"):
             nazwa = "kaplan"
+        elif "slub" in h1:  # "Data ślubu" – adnotacja dopisana później w księdze zgonów
+            nazwa = "data_slubu"
         elif h2 == "zgonu":
             nazwa = "data_zgonu"
         elif "pogrzeb" in h2:
@@ -345,7 +347,7 @@ def wykryj_kolumny(ws) -> dict:
             nazwa = "plec_k"
         elif "przyczyna" in h1:
             nazwa = "przyczyna"
-        elif "wiek" in h1 or "urodzeni" in h1:
+        elif "wiek" in h1 or "urodzeni" in h1 or "narodzin" in h1:
             wiekowe.append(c)
             ostatnia_nazwana = max(ostatnia_nazwana, c)
             continue
@@ -463,7 +465,8 @@ def wczytaj_plik(plik: Path, args, raport: Raport, znane: set[str] | None = None
 
         zgon, p1 = parsuj_date(komorka(w, "data_zgonu"))
         pogrzeb, p2 = parsuj_date(komorka(w, "data_pogrzebu"))
-        for p in (p1, p2):
+        slub, p3 = parsuj_date(komorka(w, "data_slubu"))  # późniejsza adnotacja o ślubie (jeśli jest kolumna)
+        for p in (p1, p2, p3):
             if p:
                 raport.ostrz(nazwa_pliku, w, p)
 
@@ -586,6 +589,7 @@ def wczytaj_plik(plik: Path, args, raport: Raport, znane: set[str] | None = None
             "nr": nr,
             "data_zgonu": zgon,
             "data_pogrzebu": pogrzeb,
+            "data_slubu": slub,
             "dom": tekst(komorka(w, "dom")),
             "imie": imie,
             "nazwisko": nazwisko,

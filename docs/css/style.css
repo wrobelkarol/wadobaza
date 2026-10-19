@@ -64,7 +64,19 @@ main { padding-top: 20px; padding-bottom: 32px; }
 .stan-bazy { display: block; color: var(--przygaszony); font-size: .9rem; margin-top: 4px; }
 
 /* formularz */
-.szukaj { background: var(--panel); border: 1px solid var(--linia); border-radius: 8px; padding: 16px; box-shadow: var(--cien); }
+.szukaj, .formularz { background: var(--panel); border: 1px solid var(--linia); border-radius: 8px; padding: 16px; box-shadow: var(--cien); }
+.formularz { display: flex; flex-direction: column; gap: 14px; }
+.pole small { font-weight: 400; }
+.pole textarea {
+  font: inherit; font-weight: 400; color: var(--tusz); background: var(--tlo); resize: vertical;
+  border: 1px solid var(--linia); border-radius: 6px; padding: 9px 10px; width: 100%; min-height: 140px;
+}
+.pole textarea:focus { border-color: var(--akcent); }
+.pulapka { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.status { margin: 0; min-height: 1.5em; font-weight: 600; }
+.status-ok { color: #1f6f3a; }
+.status-blad { color: var(--akcent); }
+.drobny { margin: 0; font-size: .85rem; color: var(--przygaszony); }
 .pola { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px 16px; }
 .pole { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; font-weight: 600; color: var(--przygaszony); }
 .pole.szerokie { grid-column: span 2; }

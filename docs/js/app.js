@@ -3,7 +3,6 @@
   'use strict';
 
   var W = window.Wadobaza;
-  var REPO_ISSUES = 'https://github.com/wrobelkarol/wadobaza/issues/new';
   var KOLUMNY = 11; // liczba kolumn tabeli (do colspan wiersza ze szczegółami)
 
   /* ------------------------------------------------------------ tekst */
@@ -240,6 +239,9 @@
     // Pola w kolejności i pod nazwami kolumn z Excela; puste pokazujemy jako „—”, żeby widać było, czego brakuje.
     function fakt(etykieta, wartosc, zawsze, klasa) {
       if (!wartosc && !zawsze) { return; }
+      wartosc = wartosc ? String(wartosc) : '';
+      // każda wartość zaczyna się wielką literą (Żeńska, Katolickie, Ur. w Przytkowicach…)
+      wartosc = wartosc.charAt(0).toUpperCase() + wartosc.slice(1);
       var dd = el('dd', { text: wartosc || '—' });
       if (klasa && wartosc) { dd.className = klasa; }
       fakty.push(el('div', null, el('dt', { text: etykieta }), dd));
@@ -251,9 +253,12 @@
     var imieNazwisko = [r.imie, r.nazwisko].filter(Boolean).join(' ');
     if (imieNazwisko && r.nazwisko_auto) { imieNazwisko += ' (nazwisko ojca z opisu – wstępnie)'; }
     if (imieNazwisko && r.nazwisko_wg_rodzica) { imieNazwisko += ' (nazwisko z opisu rodziców)'; }
-    fakt('Liczba porządkowa', r.nr != null ? String(r.nr) : '', true);
+    // numeracja aktów zaczyna się od 1 w każdym roku księgi, stąd rok w etykiecie
+    fakt('Numer aktu w roku ' + r.rok, r.nr != null ? String(r.nr) : '', true);
     fakt('Data zgonu', W.formatData(r.data_zgonu) || 'niewidoczna na skanie', true);
     fakt('Data pogrzebu', W.formatData(r.data_pogrzebu), true);
+    fakt('Data ślubu', W.formatData(r.data_slubu), true);
+    fakt('Data narodzin', W.formatData(r.data_ur), true);
     fakt('Numer domu', r.dom, true);
     fakt('Imię nazwisko', imieNazwisko, true, r.nazwisko_auto ? 'auto' : '');
     fakt('Matka', zOpisu(matka), true, auto ? 'auto' : '');
@@ -263,7 +268,6 @@
     fakt('Płeć', r.plec === 'K' ? 'żeńska' : (r.plec === 'M' ? 'męska' : ''), true);
     fakt('Wiek zmarłego', r.wiek, true);
     fakt('Przyczyna zgonu', r.przyczyna, true);
-    fakt('Data urodzenia', W.formatData(r.data_ur), true);
     fakt('Uwagi', r.dodatkowe, true);
     fakt('Kapłan', r.kaplan, true);
     fakt('Nazwisko w opisie aktu', r.nazwisko_w_akcie);
@@ -277,11 +281,7 @@
         navigator.clipboard.writeText(link).then(gotowe, function () { window.prompt('Skopiuj link:', link); });
       } else { window.prompt('Skopiuj link:', link); }
     });
-    var blad = el('a', {
-      href: REPO_ISSUES + '?title=' + encodeURIComponent('Błąd w akcie ' + r.id) +
-        '&body=' + encodeURIComponent('Akt: ' + link + '\n\nCo jest nie tak:\n'),
-      target: '_blank', rel: 'noopener noreferrer'
-    }, 'Zgłoś błąd w tym akcie');
+    var blad = el('a', { href: 'kontakt.html?id=' + encodeURIComponent(r.id) }, 'Zgłoś błąd w tym akcie');
 
     return el('td', { colspan: String(KOLUMNY) },
       el('p', { class: 'opis-aktu' }, podswietl(r.opis, szukane)),
