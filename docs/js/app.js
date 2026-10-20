@@ -10,7 +10,9 @@
     { id: 'komornik', nazwa: 'komornik', rdzen: 'komorni' },
     { id: 'zapalenie', nazwa: 'zapalenie', rdzen: 'zapaleni' },
     { id: 'starosc', nazwa: 'starość', rdzen: 'starosc' },
-    { id: 'starosc', nazwa: 'starość', rdzen: 'uwiad' }
+    { id: 'starosc', nazwa: 'starość', rdzen: 'uwiad' },
+    { id: 'ciezki-porod', nazwa: 'ciężki poród', rdzen: 'porod' },
+    { id: 'ciezki-porod', nazwa: 'ciężki poród', rdzen: 'wpisalem' }  // formuła „Wpisałem ja…” (inscripsi)
   ];
 
   /* ------------------------------------------------------------ tekst */
