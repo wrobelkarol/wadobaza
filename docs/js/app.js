@@ -7,7 +7,10 @@
   // hasła słowniczka wykrywane w treści aktu (początek wyrazu bez polskich znaków: kmieciu, komornika…)
   var POJECIA = [
     { id: 'kmiec', nazwa: 'kmieć', rdzen: 'kmie' },
+    { id: 'zagrodnik', nazwa: 'zagrodnik', rdzen: 'zagrodni' },
     { id: 'komornik', nazwa: 'komornik', rdzen: 'komorni' },
+    { id: 'sluzacy', nazwa: 'służący', rdzen: 'sluzac' },
+    { id: 'nieslubne', nazwa: 'nieślubne dziecko', rdzen: 'nieslub' },
     { id: 'zapalenie', nazwa: 'zapalenie', rdzen: 'zapaleni' },
     { id: 'starosc', nazwa: 'starość', rdzen: 'starosc' },
     { id: 'starosc', nazwa: 'starość', rdzen: 'uwiad' },
