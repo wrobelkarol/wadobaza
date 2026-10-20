@@ -171,7 +171,7 @@ mark { background: var(--zaznacz); color: inherit; padding: 0 1px; border-radius
 .tresc th { background: var(--akcent-jasny); }
 
 /* słowniczek */
-.motto { margin: 4px 0 18px; padding: 10px 14px; background: var(--akcent-jasny); border-left: 3px solid var(--akcent); border-radius: 4px; font-family: var(--szeryf); font-size: .88rem; line-height: 1.5; font-style: italic; }
+.motto { margin: 4px 0 18px; padding: 10px 14px; background: var(--akcent-jasny); border-left: 3px solid var(--akcent); border-radius: 4px; font-family: var(--bezszeryf); font-size: .9rem; line-height: 1.55; }
 .motto p { margin: 0; }
 .motto p + p { margin-top: 6px; }
 .kategorie { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 4px; }
