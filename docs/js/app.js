@@ -4,6 +4,14 @@
 
   var W = window.Wadobaza;
   var KOLUMNY = 11; // liczba kolumn tabeli (do colspan wiersza ze szczegółami)
+  // hasła słowniczka wykrywane w treści aktu (początek wyrazu bez polskich znaków: kmieciu, komornika…)
+  var POJECIA = [
+    { id: 'kmiec', nazwa: 'kmieć', rdzen: 'kmie' },
+    { id: 'komornik', nazwa: 'komornik', rdzen: 'komorni' },
+    { id: 'zapalenie', nazwa: 'zapalenie', rdzen: 'zapaleni' },
+    { id: 'starosc', nazwa: 'starość', rdzen: 'starosc' },
+    { id: 'starosc', nazwa: 'starość', rdzen: 'uwiad' }
+  ];
 
   /* ------------------------------------------------------------ tekst */
 
@@ -282,11 +290,20 @@
       } else { window.prompt('Skopiuj link:', link); }
     });
     var blad = el('a', { href: 'kontakt.html?id=' + encodeURIComponent(r.id) }, 'Zgłoś błąd w tym akcie');
+    // Słowniczek: ogólny link + bezpośrednie odnośniki do pojęć, które padają w tym akcie
+    var pojecia = POJECIA.filter(function (p, i) {
+      var pierwsze = POJECIA.findIndex(function (x) { return x.id === p.id && r._calosc.some(function (t) { return t.indexOf(x.rdzen) === 0; }); });
+      return pierwsze === i;  // każde hasło raz, nawet gdy pasuje kilka form (starość / uwiąd)
+    });
+    var slownik = el('span', null, el('a', { href: 'slowniczek.html' }, 'Słowniczek'),
+      pojecia.length ? [' (w tym akcie: '].concat(pojecia.map(function (p, i) {
+        return [i ? ', ' : '', el('a', { href: 'slowniczek.html#' + p.id }, p.nazwa)];
+      }), [')']) : null);
 
     return el('td', { colspan: String(KOLUMNY) },
       el('p', { class: 'opis-aktu' }, podswietl(r.opis, szukane)),
       el('dl', { class: 'fakty' }, fakty),
-      el('div', { class: 'akcje' }, el('span', null, zrodlo(r)), kopiuj, blad)
+      el('div', { class: 'akcje' }, el('span', null, zrodlo(r)), kopiuj, blad, slownik)
     );
   }
 

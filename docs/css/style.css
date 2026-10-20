@@ -54,7 +54,7 @@ a:hover { text-decoration-thickness: 2px; }
 .marka { text-decoration: none; color: var(--tusz); display: flex; flex-direction: column; line-height: 1.2; }
 .marka-nazwa { font: 700 1.9rem var(--szeryf); color: var(--akcent); letter-spacing: .01em; }
 .marka-opis { font-size: .85rem; color: var(--przygaszony); }
-.menu { display: flex; gap: 4px; }
+.menu { display: flex; flex-wrap: wrap; gap: 4px; }
 .menu a { padding: 8px 14px; border-radius: 6px; text-decoration: none; color: var(--tusz); font-weight: 600; }
 .menu a:hover { background: var(--akcent-jasny); }
 .menu a[aria-current="page"] { background: var(--akcent-jasny); color: var(--akcent); }
@@ -169,6 +169,22 @@ mark { background: var(--zaznacz); color: inherit; padding: 0 1px; border-radius
 .tresc table { border-collapse: collapse; width: 100%; background: var(--panel); border: 1px solid var(--linia); }
 .tresc th, .tresc td { padding: 8px 10px; border-bottom: 1px solid var(--linia); text-align: left; }
 .tresc th { background: var(--akcent-jasny); }
+
+/* słowniczek */
+.kategorie { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 4px; }
+.kategorie a { padding: 6px 14px; border-radius: 16px; background: var(--akcent-jasny); color: var(--akcent); font-weight: 600; text-decoration: none; }
+.kategorie a:hover { text-decoration: underline; }
+.tresc .cichy { color: var(--przygaszony); margin-top: 0; }
+.haslo { background: var(--panel); border: 1px solid var(--linia); border-radius: 8px; padding: 14px 18px; margin: 14px 0; scroll-margin-top: 12px; }
+.haslo:target { border-color: var(--akcent); box-shadow: 0 0 0 2px var(--akcent-jasny); }
+.haslo h3 { margin: 0 0 10px; font: 700 1.2rem var(--szeryf); color: var(--akcent); }
+.lacina { font: italic 400 .9rem var(--bezszeryf); color: var(--przygaszony); margin-left: 6px; }
+.okresy { display: grid; grid-template-columns: 10.5rem 1fr; gap: 8px 16px; margin: 0; }
+.okresy dt { font-weight: 700; }
+.okresy dd { margin: 0; }
+.uwaga-hasla { margin: 12px 0 0; font-size: .92rem; color: var(--przygaszony); border-left: 3px solid var(--linia); padding-left: 10px; }
+@media (max-width: 560px) { .okresy { grid-template-columns: 1fr; gap: 2px; } .okresy dd { margin-bottom: 8px; } }
+@media (max-width: 480px) { .menu a { padding: 6px 9px; font-size: .92rem; } }
 
 .stopka { border-top: 1px solid var(--linia); padding: 18px 0 28px; color: var(--przygaszony); font-size: .88rem; }
 .stopka p { margin: 4px 0; }
