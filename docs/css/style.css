@@ -171,9 +171,9 @@ mark { background: var(--zaznacz); color: inherit; padding: 0 1px; border-radius
 .tresc th { background: var(--akcent-jasny); }
 
 /* słowniczek */
-.motto { margin: 4px 0 20px; padding: 14px 18px; background: var(--akcent-jasny); border-left: 4px solid var(--akcent); border-radius: 4px; font-family: var(--szeryf); font-size: 1.05rem; line-height: 1.6; font-style: italic; }
+.motto { margin: 4px 0 18px; padding: 10px 14px; background: var(--akcent-jasny); border-left: 3px solid var(--akcent); border-radius: 4px; font-family: var(--szeryf); font-size: .88rem; line-height: 1.5; font-style: italic; }
 .motto p { margin: 0; }
-.motto p + p { margin-top: 8px; }
+.motto p + p { margin-top: 6px; }
 .kategorie { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 4px; }
 .kategorie a { padding: 6px 14px; border-radius: 16px; background: var(--akcent-jasny); color: var(--akcent); font-weight: 600; text-decoration: none; }
 .kategorie a:hover { text-decoration: underline; }
