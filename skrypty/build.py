@@ -512,22 +512,18 @@ def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int 
         if malzonek and mz_rodowe:
             malzonek += f" z domu {mz_rodowe}"
 
-        # przyczyna (z adnotacją o sakramentach jak w starszych rocznikach), kapłan i dodatkowe informacje
+        # przyczyna: sama choroba; kapłan: samo imię i nazwisko (kolumna "Ksiądz");
+        # z dopisków do "dodatkowych" idzie tylko to, co nie jest formułą o sakramentach ani o pochowaniu/zapisaniu
         przyczyna = t("Przyczyna zgonu")
-        przyczyna = przyczyna[0].lower() + przyczyna[1:] if przyczyna and not przyczyna[:2].isupper() else przyczyna
-        reszta, kaplan = rozdziel_kaplana(t("Adnotacje / dopiski"))
+        if przyczyna:  # kilka przyczyn bez przecinka ("Starość Zapalenie") -> "starość, zapalenie"
+            przyczyna = ", ".join(c[0].lower() + c[1:] if not c[:2].isupper() else c
+                                  for c in re.split(rf"\s+(?=[{CAP}])", przyczyna))
+        reszta, kaplan_zdanie = rozdziel_kaplana(t("Adnotacje / dopiski"))
+        kaplan = t("Ksiądz") or kaplan_zdanie
         if reszta:
             zdania = re.split(r"(?<=\.)\s+", reszta)
-            kaplan_z = [z for z in zdania if re.match(r"(Zapisałem|Wpisałem|Pochowałem)\b", z)]
-            sakr = [z for z in zdania if "akrament" in z and z not in kaplan_z]
-            if kaplan_z:
-                kaplan = " ".join(kaplan_z + ([kaplan] if kaplan else []))
-            if sakr and przyczyna:
-                s = " ".join(sakr).rstrip(".")
-                przyczyna = f"{przyczyna}, {s[0].lower()}{s[1:]}"   # "zapalenie, zaopatrzona Świętymi Sakramentami"
-            else:
-                sakr = []
-            reszta = " ".join(z for z in zdania if z not in kaplan_z and z not in sakr) or None
+            reszta = " ".join(z for z in zdania if not re.match(r"(Zapisałem|Wpisałem|Pochowałem)\b", z)
+                              and "akrament" not in z) or None
         inne = t("Inne informacje z aktu")
         if inne and zloz(inne.rstrip(".")) in zloz(opis):
             inne = None  # to samo, co już stoi w tekście aktu
