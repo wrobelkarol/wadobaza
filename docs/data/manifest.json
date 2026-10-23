@@ -15,9 +15,10 @@
       "parafia_id": "przytkowice",
       "typ": "zgony",
       "lata": [
-        1890
+        1890,
+        1891
       ],
-      "rekordow": 75
+      "rekordow": 138
     }
   ],
   "zrodla": {

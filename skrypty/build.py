@@ -499,7 +499,8 @@ def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int 
             if nazwisko_akt and zloz(nazwisko_akt) != zloz(nazwisko or ""):
                 nazwisko_w_akcie = nazwisko_akt
         else:
-            nazwisko = nazwisko_akt or oj_nazwisko or (ma_rodowe if "niesl" in rodzaj else None)
+            bez_ojca = not oj_imie and not oj_nazwisko and (rodzaj.startswith("dziecko") or rodzaj.startswith("martwe"))
+            nazwisko = nazwisko_akt or oj_nazwisko or (ma_rodowe if "niesl" in rodzaj or bez_ojca else None)
             if nazwisko and not nazwisko_akt and plec == "K" and nazwisko == oj_nazwisko:
                 nazwisko = forma_zenska(nazwisko)
             # nazwisko dziecka po rodzicu pokazujemy zwyczajnie, bez dopisku "wg rodzica"
