@@ -492,7 +492,7 @@ def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int 
         imie, nazwisko_akt, rodowe = t("Zmarły – imię"), t("Zmarły – nazwisko"), t("Zmarły – nazwisko rodowe")
         oj_imie, oj_nazwisko = t("Ojciec – imię"), t("Ojciec – nazwisko")
         ma_imie, ma_rodowe = t("Matka – imię"), t("Matka – nazwisko rodowe")
-        nazwisko = nazwisko_w_akcie = wg_rodzica = nazwisko_auto = None
+        nazwisko = nazwisko_w_akcie = nazwisko_auto = None
         if plec == "K" and rodzaj in ("zona", "wdowa"):
             nazwisko = rodowe or oj_nazwisko
             nazwisko_auto = True if nazwisko and not rodowe else None
@@ -502,9 +502,7 @@ def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int 
             nazwisko = nazwisko_akt or oj_nazwisko or (ma_rodowe if "niesl" in rodzaj else None)
             if nazwisko and not nazwisko_akt and plec == "K" and nazwisko == oj_nazwisko:
                 nazwisko = forma_zenska(nazwisko)
-            if nazwisko and (not nazwisko_akt or (rodzaj.startswith("dziecko") or rodzaj.startswith("martwe"))
-                             and not zloz(opis).startswith(zloz(f"{imie} {nazwisko}"))):
-                wg_rodzica = True  # nazwisko nie stoi przy imieniu w akcie, tylko przy rodzicu
+            # nazwisko dziecka po rodzicu pokazujemy zwyczajnie, bez dopisku "wg rodzica"
         if not nazwisko:
             raport.bez_nazwiska.append(f"{nazwa_pliku} w.{w}: {opis[:70]}")
         mz_imie, mz_nazwisko, mz_rodowe = t("Małżonek – imię"), t("Małżonek – nazwisko"), t("Małżonek – nazwisko rodowe")
@@ -542,7 +540,6 @@ def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int 
             "imie": imie,
             "nazwisko": nazwisko,
             "nazwisko_auto": nazwisko_auto,
-            "nazwisko_wg_rodzica": wg_rodzica,
             "nazwisko_w_akcie": nazwisko_w_akcie,
             "imie_ojca": oj_imie,
             "imie_matki": ma_imie,
