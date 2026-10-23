@@ -421,6 +421,150 @@ def zbierz_znane(pliki: list[Path]) -> set[str]:
     return znane | zbierz_znane_nazwiska(teksty)
 
 
+def czy_weryfikacja(wb) -> bool:
+    """Plik pobrany z programu Weryfikacja: arkusze 'Łacina' i 'Polski', w każdym kolumna 'Numer aktu'."""
+    return "Polski" in wb.sheetnames and "Numer aktu" in [c.value for c in wb["Polski"][1]]
+
+
+def _dzien(v: object) -> tuple[int | None, int | None]:
+    """Dzień z Weryfikacji: 5 / '5.' -> (5, None); '28/2' -> (28, 2)."""
+    m = re.fullmatch(r"\s*(\d{1,2})\s*(?:/\s*(\d{1,2}))?\s*\.?\s*", str(v if v is not None else ""))
+    return (int(m[1]), int(m[2]) if m[2] else None) if m else (None, None)
+
+
+def _bez_ulamka_lat(t: str | None) -> str | None:
+    """'40½ lat' / '4 9/12 lat' -> '40 lat' / '4 lat' (strona pokazuje pełne lata)."""
+    return re.sub(r"^\s*(\d+)(?:\s*[½¼¾⅓⅔]|\s+\d+\s*/\s*\d+)(?=\s*(?:lat|lata|rok|roku)\b)", r"\1", t) if t else t
+
+
+def forma_zenska(nazwisko: str) -> str:
+    """Nazwisko ojca dla córki: Rudecki -> Rudecka, Ciepły -> Ciepła; rzeczownikowe (Rzepka, Morek) bez zmian."""
+    if re.search(r"(sk|ck|dzk)i$", nazwisko) or re.search(r"[^aeiouyąęó]y$", nazwisko):
+        return nazwisko[:-1] + "a"
+    return nazwisko
+
+
+def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int | None, args, raport: Raport) -> list[dict]:
+    """Rocznik z programu Weryfikacja: każde pole aktu w osobnej kolumnie, sprawdzone ręcznie (bez zgadywania z opisu)."""
+    ws = wb["Polski"]
+    naglowki = [tekst(c.value) for c in ws[1]]
+    nazwa_pliku = f"{parafia}/{plik.parent.name}/{plik.name}"
+
+    rekordy: list[dict] = []
+    for w, wiersz in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        k = {h: wiersz[i] for i, h in enumerate(naglowki) if h}
+        t = lambda kol: tekst(k.get(kol))  # noqa: E731
+        nr, opis = liczba(k.get("Numer aktu")), t("Tekst aktu (cały)")
+        if nr is None and opis is None:
+            continue
+        if opis is None:
+            raport.ostrz(nazwa_pliku, w, f"akt nr {nr} bez tekstu aktu – pominięty")
+            continue
+        rok = liczba(k.get("Rok")) or rok_folder
+        if not rok:
+            raport.ostrz(nazwa_pliku, w, "nie ustalono roku – pominięty")
+            continue
+
+        # daty: dzień + miesiąc (miesiąc pogrzebu: kolumna, zapis "3/2" albo następny, gdy dzień pogrzebu jest wcześniejszy)
+        dz, mz = _dzien(k.get("Dzień zgonu"))
+        dp, mp = _dzien(k.get("Dzień pogrzebu"))
+        m_zgonu = mz or liczba(k.get("Miesiąc zgonu"))
+        m_pogrz = liczba(k.get("Miesiąc pogrzebu")) or mp
+        if not m_pogrz and m_zgonu and dp is not None:
+            m_pogrz = m_zgonu % 12 + 1 if dz is not None and dp < dz else m_zgonu
+        zgon = _data_lub_none(rok, m_zgonu, dz) if dz and m_zgonu else None
+        pogrzeb = None
+        if dp and m_pogrz:
+            pogrzeb = _data_lub_none(rok + (1 if m_zgonu and m_pogrz < m_zgonu else 0), m_pogrz, dp)
+        if (dz and m_zgonu and not zgon) or (dp and m_pogrz and not pogrzeb):
+            raport.ostrz(nazwa_pliku, w, f"akt nr {nr}: niemożliwa data (zgon {dz}.{m_zgonu}, pogrzeb {dp}.{m_pogrz})")
+        if zgon and pogrzeb and not 0 <= (dt.date.fromisoformat(pogrzeb) - dt.date.fromisoformat(zgon)).days <= 7:
+            raport.ostrz(nazwa_pliku, w, f"akt nr {nr}: pogrzeb {pogrzeb} a zgon {zgon}")
+        if (rok_z_daty(zgon) or rok_z_daty(pogrzeb) or rok) > min(args.max_rok, MAX_ROK_TYPU.get(typ, args.max_rok)):
+            raport.odrzucone_rok[rok] += 1
+            continue
+
+        plec = {"M": "M", "K": "K"}.get((t("Płeć") or "").upper()[:1])
+        religia = {"tak": "kat", "nie": "inna"}.get(zloz(t("Katolik") or ""))
+        rodzaj = zloz(t("Rodzaj aktu") or "")
+
+        # osoba zmarła: zamężne kobiety pod nazwiskiem panieńskim, dzieci bez nazwiska - po rodzicu
+        imie, nazwisko_akt, rodowe = t("Zmarły – imię"), t("Zmarły – nazwisko"), t("Zmarły – nazwisko rodowe")
+        oj_imie, oj_nazwisko = t("Ojciec – imię"), t("Ojciec – nazwisko")
+        ma_imie, ma_rodowe = t("Matka – imię"), t("Matka – nazwisko rodowe")
+        nazwisko = nazwisko_w_akcie = wg_rodzica = nazwisko_auto = None
+        if plec == "K" and rodzaj in ("zona", "wdowa"):
+            nazwisko = rodowe or oj_nazwisko
+            nazwisko_auto = True if nazwisko and not rodowe else None
+            if nazwisko_akt and zloz(nazwisko_akt) != zloz(nazwisko or ""):
+                nazwisko_w_akcie = nazwisko_akt
+        else:
+            nazwisko = nazwisko_akt or oj_nazwisko or (ma_rodowe if "niesl" in rodzaj else None)
+            if nazwisko and not nazwisko_akt and plec == "K" and nazwisko == oj_nazwisko:
+                nazwisko = forma_zenska(nazwisko)
+            if nazwisko and (not nazwisko_akt or (rodzaj.startswith("dziecko") or rodzaj.startswith("martwe"))
+                             and not zloz(opis).startswith(zloz(f"{imie} {nazwisko}"))):
+                wg_rodzica = True  # nazwisko nie stoi przy imieniu w akcie, tylko przy rodzicu
+        if not nazwisko:
+            raport.bez_nazwiska.append(f"{nazwa_pliku} w.{w}: {opis[:70]}")
+        mz_imie, mz_nazwisko, mz_rodowe = t("Małżonek – imię"), t("Małżonek – nazwisko"), t("Małżonek – nazwisko rodowe")
+        malzonek = " ".join(s for s in (mz_imie, mz_nazwisko) if s) or None
+        if malzonek and mz_rodowe:
+            malzonek += f" z domu {mz_rodowe}"
+
+        # przyczyna (z adnotacją o sakramentach jak w starszych rocznikach), kapłan i dodatkowe informacje
+        przyczyna = t("Przyczyna zgonu")
+        przyczyna = przyczyna[0].lower() + przyczyna[1:] if przyczyna and not przyczyna[:2].isupper() else przyczyna
+        reszta, kaplan = rozdziel_kaplana(t("Adnotacje / dopiski"))
+        if reszta:
+            zdania = re.split(r"(?<=\.)\s+", reszta)
+            kaplan_z = [z for z in zdania if re.match(r"(Zapisałem|Wpisałem|Pochowałem)\b", z)]
+            sakr = [z for z in zdania if "akrament" in z and z not in kaplan_z]
+            if kaplan_z:
+                kaplan = " ".join(kaplan_z + ([kaplan] if kaplan else []))
+            if sakr and przyczyna:
+                s = " ".join(sakr).rstrip(".")
+                przyczyna = f"{przyczyna}, {s[0].lower()}{s[1:]}"   # "zapalenie, zaopatrzona Świętymi Sakramentami"
+            else:
+                sakr = []
+            reszta = " ".join(z for z in zdania if z not in kaplan_z and z not in sakr) or None
+        inne = t("Inne informacje z aktu")
+        if inne and zloz(inne.rstrip(".")) in zloz(opis):
+            inne = None  # to samo, co już stoi w tekście aktu
+        dodatkowe = poprawione(" ".join(s for s in (inne, reszta) if s) or None)
+        wiek_tekst = _bez_ulamka_lat(t("Wiek"))
+
+        rekord = {
+            "_wiersz": w,
+            "parafia": parafia,
+            "typ": typ,
+            "rok": rok,
+            "nr": nr,
+            "data_zgonu": zgon,
+            "data_pogrzebu": pogrzeb,
+            "dom": t("Numer domu"),
+            "imie": imie,
+            "nazwisko": nazwisko,
+            "nazwisko_auto": nazwisko_auto,
+            "nazwisko_wg_rodzica": wg_rodzica,
+            "nazwisko_w_akcie": nazwisko_w_akcie,
+            "imie_ojca": oj_imie,
+            "imie_matki": ma_imie,
+            "nazwisko_matki": ma_rodowe,
+            "malzonek": malzonek,
+            "plec": plec,
+            "religia": religia,
+            "wiek": wiek_pelne_lata(wiek_tekst),
+            "wiek_lat": wiek_w_latach(wiek_tekst),
+            "przyczyna": poprawione(przyczyna),
+            "opis": poprawione(opis),
+            "dodatkowe": dodatkowe,
+            "kaplan": poprawione(kaplan),
+        }
+        rekordy.append({k: v for k, v in rekord.items() if v is not None})
+    return rekordy
+
+
 def wczytaj_plik(plik: Path, args, raport: Raport, znane: set[str] | None = None) -> list[dict]:
     znane = znane or set()
     parafia, typ, rok_folder = rozpoznaj_sciezke(plik)
@@ -432,6 +576,8 @@ def wczytaj_plik(plik: Path, args, raport: Raport, znane: set[str] | None = None
         return []
 
     wb = openpyxl.load_workbook(plik, data_only=True)
+    if czy_weryfikacja(wb):
+        return wczytaj_weryfikacje(wb, plik, parafia, typ, rok_folder, args, raport)
     ws = wb.worksheets[0]
     nazwa_pliku = f"{parafia}/{plik.parent.name}/{plik.name}"
     try:
@@ -709,7 +855,8 @@ def main() -> None:
     bez = len(raport.bez_nazwiska)
     print(f"Bez rozpoznanego nazwiska: {bez} z {razem}")
     wszystkie = [r for v in zbiory.values() for r in v]
-    z_excela = sum(1 for r in wszystkie if (r.get("matka") or r.get("ojciec")) and not r.get("rodzice_auto"))
+    z_excela = sum(1 for r in wszystkie if (r.get("matka") or r.get("ojciec") or r.get("imie_ojca") or r.get("imie_matki")
+                                             or r.get("malzonek")) and not r.get("rodzice_auto"))
     z_opisu_n = sum(1 for r in wszystkie if r.get("rodzice_auto"))
     print(f"Rodzice: z kolumn Excela {z_excela}, wstępnie (z opisu lub żółte do sprawdzenia) {z_opisu_n}, brak {razem - z_excela - z_opisu_n}"
           f"  |  imię ojca: {sum(1 for r in wszystkie if r.get('imie_ojca'))}, imię matki: {sum(1 for r in wszystkie if r.get('imie_matki'))},"
