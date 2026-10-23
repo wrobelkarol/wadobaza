@@ -553,6 +553,7 @@ def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int 
             "opis": poprawione(opis),
             "dodatkowe": dodatkowe,
             "kaplan": poprawione(kaplan),
+            "skan": t("Skan"),  # link do zdjęcia strony księgi z tabelki "Linki do skanów" w Weryfikacji
         }
         rekordy.append({k: v for k, v in rekord.items() if v is not None})
     return rekordy
