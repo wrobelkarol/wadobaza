@@ -10,6 +10,8 @@
     { id: 'zagrodnik', nazwa: 'zagrodnik', rdzen: 'zagrodni' },
     { id: 'komornik', nazwa: 'komornik', rdzen: 'komorni' },
     { id: 'sluzacy', nazwa: 'służący', rdzen: 'sluzac' },
+    { id: 'posiadacz-dobr', nazwa: 'posiadacz dóbr', rdzen: 'posiadacz' },
+    { id: 'posiadacz-dobr', nazwa: 'posiadacz dóbr', rdzen: 'possessor' },
     { id: 'nieslubne', nazwa: 'nieślubne dziecko', rdzen: 'nieslub' },
     { id: 'zapalenie', nazwa: 'zapalenie', rdzen: 'zapaleni' },
     { id: 'starosc', nazwa: 'starość', rdzen: 'starosc' },
