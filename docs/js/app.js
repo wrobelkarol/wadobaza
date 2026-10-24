@@ -15,7 +15,9 @@
     { id: 'starosc', nazwa: 'starość', rdzen: 'starosc' },
     { id: 'starosc', nazwa: 'starość', rdzen: 'uwiad' },
     { id: 'ciezki-porod', nazwa: 'ciężki poród', rdzen: 'porod' },
-    { id: 'ciezki-porod', nazwa: 'ciężki poród', rdzen: 'wpisalem' }  // formuła „Wpisałem ja…” (inscripsi)
+    { id: 'ciezki-porod', nazwa: 'ciężki poród', rdzen: 'wpisalem' },  // formuła „Wpisałem ja…” (inscripsi)
+    { id: 'zabkowanie', nazwa: 'ząbkowanie', rdzen: 'zabkowa' },
+    { id: 'paraliz', nazwa: 'paraliż', rdzen: 'parali' }
   ];
 
   /* ------------------------------------------------------------ tekst */
