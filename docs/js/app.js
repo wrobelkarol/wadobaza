@@ -17,6 +17,7 @@
     { id: 'zapalenie', nazwa: 'zapalenie', rdzen: 'zapaleni' },
     { id: 'niezyt', nazwa: 'nieżyt jelit', rdzen: 'niezyt' },
     { id: 'niezyt', nazwa: 'nieżyt jelit', rdzen: 'catarrh' },
+    { id: 'niezyt', nazwa: 'nieżyt jelit', rdzen: 'catharrh' },
     { id: 'starosc', nazwa: 'starość', rdzen: 'starosc' },
     { id: 'starosc', nazwa: 'starość', rdzen: 'uwiad' },
     { id: 'ciezki-porod', nazwa: 'ciężki poród', rdzen: 'porod' },
