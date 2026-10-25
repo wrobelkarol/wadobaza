@@ -12,6 +12,7 @@
     { id: 'sluzacy', nazwa: 'służący', rdzen: 'sluzac' },
     { id: 'posiadacz-dobr', nazwa: 'posiadacz dóbr', rdzen: 'posiadacz' },
     { id: 'posiadacz-dobr', nazwa: 'posiadacz dóbr', rdzen: 'possessor' },
+    { id: 'dominus', nazwa: 'Pan (D.)', rdzen: 'dominus' },
     { id: 'nieslubne', nazwa: 'nieślubne dziecko', rdzen: 'nieslub' },
     { id: 'zapalenie', nazwa: 'zapalenie', rdzen: 'zapaleni' },
     { id: 'starosc', nazwa: 'starość', rdzen: 'starosc' },
