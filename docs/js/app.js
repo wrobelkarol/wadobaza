@@ -15,6 +15,8 @@
     { id: 'dominus', nazwa: 'Pan (D.)', rdzen: 'dominus' },
     { id: 'nieslubne', nazwa: 'nieślubne dziecko', rdzen: 'nieslub' },
     { id: 'zapalenie', nazwa: 'zapalenie', rdzen: 'zapaleni' },
+    { id: 'niezyt', nazwa: 'nieżyt jelit', rdzen: 'niezyt' },
+    { id: 'niezyt', nazwa: 'nieżyt jelit', rdzen: 'catarrh' },
     { id: 'starosc', nazwa: 'starość', rdzen: 'starosc' },
     { id: 'starosc', nazwa: 'starość', rdzen: 'uwiad' },
     { id: 'ciezki-porod', nazwa: 'ciężki poród', rdzen: 'porod' },
