@@ -20,6 +20,8 @@
     { id: 'niezyt', nazwa: 'nieżyt jelit', rdzen: 'catharrh' },
     { id: 'krup', nazwa: 'krup', rdzen: 'crup' },
     { id: 'krup', nazwa: 'krup', rdzen: 'croup' },
+    { id: 'rak', nazwa: 'rak', rdzen: 'carcinom' },
+    { id: 'rak', nazwa: 'rak', rdzen: 'cancer' },
     { id: 'starosc', nazwa: 'starość', rdzen: 'starosc' },
     { id: 'starosc', nazwa: 'starość', rdzen: 'uwiad' },
     { id: 'ciezki-porod', nazwa: 'ciężki poród', rdzen: 'porod' },
