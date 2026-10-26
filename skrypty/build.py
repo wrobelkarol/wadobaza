@@ -445,7 +445,8 @@ def forma_zenska(nazwisko: str) -> str:
 
 
 def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int | None, args, raport: Raport) -> list[dict]:
-    """Rocznik z programu Weryfikacja: każde pole aktu w osobnej kolumnie, sprawdzone ręcznie (bez zgadywania z opisu)."""
+    """Rocznik z programu Weryfikacja: każde pole aktu w osobnej kolumnie, sprawdzone ręcznie (bez zgadywania z opisu).
+    Tekst jest już poprawiony ręcznie, więc bez automatycznej odmiany miejscowości (psuła np. "dzielnica Wesoła")."""
     ws = wb["Polski"]
     naglowki = [tekst(c.value) for c in ws[1]]
     nazwa_pliku = f"{parafia}/{plik.parent.name}/{plik.name}"
@@ -526,7 +527,7 @@ def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int 
         inne = t("Inne informacje z aktu")
         if inne and zloz(inne.rstrip(".")) in zloz(opis):
             inne = None  # to samo, co już stoi w tekście aktu
-        dodatkowe = poprawione(" ".join(s for s in (inne, reszta) if s) or None)
+        dodatkowe = usun_lacine(" ".join(s for s in (inne, reszta) if s) or None)
         wiek_tekst = _bez_ulamka_lat(t("Wiek"))
 
         rekord = {
@@ -550,10 +551,10 @@ def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int 
             "religia": religia,
             "wiek": wiek_pelne_lata(wiek_tekst),
             "wiek_lat": wiek_w_latach(wiek_tekst),
-            "przyczyna": poprawione(przyczyna),
-            "opis": poprawione(opis),
+            "przyczyna": usun_lacine(przyczyna),
+            "opis": usun_lacine(opis),
             "dodatkowe": dodatkowe,
-            "kaplan": poprawione(kaplan),
+            "kaplan": usun_lacine(kaplan),
             "skan": t("Skan"),  # link do zdjęcia strony księgi z tabelki "Linki do skanów" w Weryfikacji
         }
         rekordy.append({k: v for k, v in rekord.items() if v is not None})
