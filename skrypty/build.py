@@ -58,7 +58,7 @@ TYPY_FOLDEROW = {
     "sluby": "malzenstwa",
     "malzenstwa": "malzenstwa",
 }
-TYPY_OBSLUGIWANE = {"zgony"}  # pozostałe dojdą, gdy będzie gotowy układ Excela
+TYPY_OBSLUGIWANE = {"zgony", "urodzenia"}  # urodzenia tylko z programu Weryfikacja; małżeństwa dojdą później
 
 PUSTE = {"", "[puste]", "-", "—", "–", "none", "nan"}
 
@@ -403,7 +403,7 @@ def zbierz_znane(pliki: list[Path]) -> set[str]:
     teksty: list[str] = []
     znane: set[str] = set()
     for p in pliki:
-        if rozpoznaj_sciezke(p)[1] not in TYPY_OBSLUGIWANE:
+        if rozpoznaj_sciezke(p)[1] != "zgony":
             continue
         try:
             ws = openpyxl.load_workbook(p, data_only=True).worksheets[0]
@@ -567,6 +567,100 @@ def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int 
     return rekordy
 
 
+def wczytaj_urodzenia(wb, plik: Path, parafia: str, rok_folder: int | None, args, raport: Raport) -> list[dict]:
+    """Rocznik urodzeń z programu Weryfikacja: dzień urodzenia i chrztu, dziecko, rodzice z ich rodzicami, chrzestni."""
+    ws = wb["Polski"]
+    naglowki = [tekst(c.value) for c in ws[1]]
+    nazwa_pliku = f"{parafia}/{plik.parent.name}/{plik.name}"
+
+    rekordy: list[dict] = []
+    for w, wiersz in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        k = {h: wiersz[i] for i, h in enumerate(naglowki) if h}
+        t = lambda kol: tekst(k.get(kol))  # noqa: E731
+        nr, opis = liczba(k.get("Numer aktu")), t("Tekst aktu (cały)")
+        numery = re.findall(r"\d+", tekst(k.get("Numer aktu")) or "")
+        nr_tekst = None
+        if nr is None and len(numery) > 1:  # bliźnięta w jednym wycinku
+            nr, nr_tekst = int(numery[0]), "–".join(numery)
+        if nr is None and opis is None:
+            continue
+        if opis is None:
+            raport.ostrz(nazwa_pliku, w, f"akt nr {nr} bez tekstu aktu – pominięty")
+            continue
+        rok = liczba(k.get("Rok")) or rok_folder
+        if not rok:
+            raport.ostrz(nazwa_pliku, w, "nie ustalono roku – pominięty")
+            continue
+
+        # chrzest zwykle tego samego dnia albo kilka dni po urodzeniu; pusty miesiąc chrztu = ten sam albo następny
+        du, mu_ = _dzien(k.get("Dzień urodzenia"))
+        dc, mc_ = _dzien(k.get("Dzień chrztu"))
+        m_ur = mu_ or liczba(k.get("Miesiąc urodzenia"))
+        m_chr = liczba(k.get("Miesiąc chrztu")) or mc_
+        if not m_chr and m_ur and dc is not None:
+            m_chr = m_ur % 12 + 1 if du is not None and dc < du else m_ur
+        urodzenie = _data_lub_none(rok, m_ur, du) if du and m_ur else None
+        chrzest = _data_lub_none(rok + (1 if m_ur and m_chr < m_ur else 0), m_chr, dc) if dc and m_chr else None
+        if (du and m_ur and not urodzenie) or (dc and m_chr and not chrzest):
+            raport.ostrz(nazwa_pliku, w, f"akt nr {nr}: niemożliwa data (urodzenie {du}.{m_ur}, chrzest {dc}.{m_chr})")
+        if urodzenie and chrzest and not 0 <= (dt.date.fromisoformat(chrzest) - dt.date.fromisoformat(urodzenie)).days <= 30:
+            raport.ostrz(nazwa_pliku, w, f"akt nr {nr}: chrzest {chrzest} a urodzenie {urodzenie}")
+        if (rok_z_daty(urodzenie) or rok) > min(args.max_rok, MAX_ROK_TYPU.get("urodzenia", args.max_rok)):
+            raport.odrzucone_rok[rok] += 1
+            continue
+
+        plec = {"M": "M", "K": "K"}.get((t("Płeć") or "").upper()[:1])
+        slubne = {"tak": True, "nie": False}.get(zloz(t("Ślubne (legitimi)") or ""))
+        oj_imie, oj_nazwisko = t("Ojciec – imię"), t("Ojciec – nazwisko")
+        ma_imie, ma_rodowe = t("Matka – imię"), t("Matka – nazwisko rodowe")
+        # dziecko bez nazwiska w akcie: po ojcu (córka w formie żeńskiej), nieślubne - po matce
+        nazwisko = t("Nazwisko")
+        if not nazwisko:
+            nazwisko = ma_rodowe if slubne is False or not oj_nazwisko else oj_nazwisko
+            if nazwisko and plec == "K" and nazwisko == oj_nazwisko:
+                nazwisko = forma_zenska(nazwisko)
+        if not nazwisko:
+            raport.bez_nazwiska.append(f"{nazwa_pliku} w.{w}: {opis[:70]}")
+        inne = t("Inne informacje z aktu")
+        if inne and zloz(inne.rstrip(".")) in zloz(opis):
+            inne = None  # to samo, co już stoi w tekście aktu
+        dodatkowe = usun_lacine(" ".join(s for s in (inne, t("Adnotacje / dopiski")) if s) or None)
+
+        rekord = {
+            "_wiersz": w,
+            "parafia": parafia,
+            "typ": "urodzenia",
+            "rok": rok,
+            "nr": nr,
+            "nr_tekst": nr_tekst,
+            "data_ur": urodzenie,
+            "data_chrztu": chrzest,
+            "dom": t("Numer domu"),
+            "imie": t("Imię"),
+            "nazwisko": nazwisko,
+            "plec": plec,
+            "religia": {"tak": "kat", "nie": "inna"}.get(zloz(t("Katolik") or "")),
+            "slubne": slubne,
+            "imie_ojca": oj_imie,
+            "nazwisko_ojca": oj_nazwisko,
+            "stan_ojca": t("Ojciec – stan/zawód"),
+            "rodzice_ojca": t("Rodzice ojca"),
+            "imie_matki": ma_imie,
+            "nazwisko_matki": ma_rodowe,
+            "stan_matki": t("Matka – stan/zawód"),
+            "rodzice_matki": t("Rodzice matki"),
+            "chrzestni": re.sub(r"\s+;\s+", "; ", t("Chrzestni – imiona, nazwiska, stan/zawód") or "") or None,
+            "akuszerka": re.sub(r"^akuszerka\s+", "", t("Akuszerka") or "", flags=re.I) or None,  # etykieta jest na stronie
+            # kolumny tekstu z Weryfikacji („dziecko | ojciec | matka | chrzestni”) jako zdania
+            "opis": usun_lacine(re.sub(r"\.?\s+\|\s+", ". ", opis)),
+            "dodatkowe": dodatkowe,
+            "kaplan": usun_lacine(t("Ksiądz")),
+            "skan": t("Skan"),
+        }
+        rekordy.append({k: v for k, v in rekord.items() if v is not None})
+    return rekordy
+
+
 def wczytaj_plik(plik: Path, args, raport: Raport, znane: set[str] | None = None) -> list[dict]:
     znane = znane or set()
     parafia, typ, rok_folder = rozpoznaj_sciezke(plik)
@@ -578,6 +672,11 @@ def wczytaj_plik(plik: Path, args, raport: Raport, znane: set[str] | None = None
         return []
 
     wb = openpyxl.load_workbook(plik, data_only=True)
+    if czy_weryfikacja(wb) and typ == "urodzenia":
+        return wczytaj_urodzenia(wb, plik, parafia, rok_folder, args, raport)
+    if typ == "urodzenia":
+        raport.pliki_pominiete.append(f"{plik.name}: urodzenia tylko z programu Weryfikacja")
+        return []
     if czy_weryfikacja(wb):
         return wczytaj_weryfikacje(wb, plik, parafia, typ, rok_folder, args, raport)
     ws = wb.worksheets[0]
@@ -829,7 +928,7 @@ def main() -> None:
     # identyfikatory (unikalne nawet gdy numer aktu się powtórzy między plikami)
     uzyte: Counter = Counter()
     for (parafia, typ), rekordy in zbiory.items():
-        rekordy.sort(key=lambda r: (r["rok"], r.get("nr") is None, r.get("nr") or 0, r.get("data_pogrzebu") or ""))
+        rekordy.sort(key=lambda r: (r["rok"], r.get("nr") is None, r.get("nr") or 0, r.get("data_pogrzebu") or r.get("data_chrztu") or ""))
         for r in rekordy:
             if r.get("nr") is None:
                 raport.ostrz(f"{parafia}/{r['rok']}", r["_wiersz"], "akt bez numeru – id z numeru wiersza")

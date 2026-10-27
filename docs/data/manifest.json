@@ -10,6 +10,16 @@
   },
   "zbiory": [
     {
+      "plik": "przytkowice-urodzenia.json",
+      "parafia": "Przytkowice",
+      "parafia_id": "przytkowice",
+      "typ": "urodzenia",
+      "lata": [
+        1881
+      ],
+      "rekordow": 55
+    },
+    {
       "plik": "przytkowice-zgony.json",
       "parafia": "Przytkowice",
       "parafia_id": "przytkowice",

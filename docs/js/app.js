@@ -138,9 +138,11 @@
     r._pid = zbior.parafia_id;
     r._n = tokens(r.nazwisko).concat(tokens(r.nazwisko_w_akcie));
     r._i = tokens(r.imie);
-    r._rodz = tokens(r.matka).concat(tokens(r.ojciec), tokens(r.malzonek), tokens(r.imie_ojca), tokens(r.imie_matki), tokens(r.nazwisko_matki));
+    r._rodz = tokens(r.matka).concat(tokens(r.ojciec), tokens(r.malzonek), tokens(r.imie_ojca), tokens(r.imie_matki), tokens(r.nazwisko_matki),
+      tokens(r.nazwisko_ojca), tokens(r.rodzice_ojca), tokens(r.rodzice_matki));
     r._opis = tokens(r.opis);
-    r._calosc = r._opis.concat(r._rodz, tokens(r.przyczyna), tokens(r.dodatkowe), tokens(r.kaplan), tokens(r.imie), tokens(r.nazwisko));
+    r._calosc = r._opis.concat(r._rodz, tokens(r.przyczyna), tokens(r.dodatkowe), tokens(r.kaplan), tokens(r.imie), tokens(r.nazwisko),
+      tokens(r.chrzestni), tokens(r.akuszerka), tokens(r.stan_ojca), tokens(r.stan_matki));
     return r;
   }
 
@@ -189,6 +191,8 @@
     nr: function (r) { return r.nr; },
     data_zgonu: function (r) { return r.data_zgonu || null; },
     data_pogrzebu: function (r) { return r.data_pogrzebu || null; },
+    data_ur: function (r) { return r.data_ur || null; },
+    data_chrztu: function (r) { return r.data_chrztu || null; },
     nazwisko: function (r) { return r.nazwisko || null; },
     imie: function (r) { return r.imie || null; },
     imie_ojca: function (r) { return r.imie_ojca || null; },
@@ -270,7 +274,7 @@
   // Link do skanu: szablon z dane/zrodla.json z numerem zdjęcia z Excela (kolumna „Skan”) albo zdjęciem domyślnym.
   function zrodlo(r) {
     var wpis = (manifest.zrodla || {})[r._pid + '/' + r.typ + '/' + r.rok];
-    var typNazwa = r.typ === 'zgony' ? 'księga zgonów' : 'księga';
+    var typNazwa = r.typ === 'zgony' ? 'księga zgonów' : r.typ === 'urodzenia' ? 'księga urodzeń' : 'księga';
     var opis = typNazwa + ' ' + r.rok + ', parafia ' + r.parafia;
     if (r.skan && /^https?:\/\//i.test(r.skan)) {  // pełny link do skanu wpisany w Excelu (kolumna „Skan”)
       return el('a', { href: r.skan, target: '_blank', rel: 'noopener noreferrer' }, 'Zobacz skan tego aktu – ' + opis);
@@ -306,6 +310,25 @@
     if (imieNazwisko && r.nazwisko_wg_rodzica) { imieNazwisko += ' (nazwisko z opisu rodziców)'; }
     // numeracja aktów zaczyna się od 1 w każdym roku księgi, stąd rok w etykiecie
     fakt('Numer aktu w roku ' + r.rok, r.nr != null ? String(r.nr_tekst || r.nr) : '', true);
+    if (r.typ === 'urodzenia') {
+      var przecinek = function () { return [].slice.call(arguments).filter(Boolean).join(', '); };
+      fakt('Data urodzenia', W.formatData(r.data_ur) || 'niewidoczna na skanie', true);
+      fakt('Data chrztu', W.formatData(r.data_chrztu), true);
+      fakt('Numer domu', r.dom, true);
+      fakt('Imię nazwisko', imieNazwisko, true);
+      fakt('Płeć', r.plec === 'K' ? 'żeńska' : (r.plec === 'M' ? 'męska' : ''), true);
+      fakt('Dziecko', r.slubne === true ? 'ślubne' : (r.slubne === false ? 'nieślubne' : ''), true);
+      fakt('Wyznanie', r.religia === 'kat' ? 'katolickie' : (r.religia === 'inna' ? 'inne' : ''), true);
+      fakt('Ojciec', przecinek([r.imie_ojca, r.nazwisko_ojca].filter(Boolean).join(' '), r.stan_ojca), true);
+      fakt('Rodzice ojca', r.rodzice_ojca, true);
+      fakt('Matka', przecinek([r.imie_matki, r.nazwisko_matki ? 'z domu ' + r.nazwisko_matki : ''].filter(Boolean).join(' '), r.stan_matki), true);
+      fakt('Rodzice matki', r.rodzice_matki, true);
+      fakt('Chrzestni', r.chrzestni, true);
+      fakt('Akuszerka', r.akuszerka);
+      fakt('Uwagi', r.dodatkowe, true);
+      fakt('Kapłan', r.kaplan, true);
+      fakt('Parafia', r.parafia);
+    } else {
     fakt('Data zgonu', W.formatData(r.data_zgonu) || 'niewidoczna na skanie', true);
     fakt('Data pogrzebu', W.formatData(r.data_pogrzebu), true);
     fakt('Data ślubu', W.formatData(r.data_slubu), true);
@@ -323,6 +346,7 @@
     fakt('Kapłan', r.kaplan, true);
     fakt('Nazwisko w opisie aktu', r.nazwisko_w_akcie);
     fakt('Parafia', r.parafia);
+    }
 
     var link = location.origin + location.pathname + '?id=' + encodeURIComponent(r.id);
     var kopiuj = el('button', { type: 'button' }, 'Skopiuj link do tego aktu');
@@ -371,8 +395,8 @@
     var tr = el('tr', { class: 'wiersz' },
       el('td', null, przycisk),
       komorka('liczba', String(r.rok)),
-      komorka('data c-sr', W.formatData(r.data_zgonu), 'data zgonu niewidoczna na skanie'),
-      komorka('data', W.formatData(r.data_pogrzebu), 'brak daty pogrzebu'),
+      komorka('data c-sr', W.formatData(r[DATY[r.typ][0][0]]), DATY[r.typ][0][2]),
+      komorka('data', W.formatData(r[DATY[r.typ][1][0]]), DATY[r.typ][1][2]),
       komorka('', r.imie ? podswietl(r.imie, szukane) : null),
       tdNazwisko,
       rodz('', r.imie_ojca),
@@ -402,6 +426,12 @@
   var ZAKLADKI = [['urodzenia', 'Urodzenia'], ['malzenstwa', 'Małżeństwa'], ['zgony', 'Zgony']];
   var wszystkie = [];
   var aktywnyTyp = 'zgony';
+  // dwie kolumny dat w tabeli: [pole, nagłówek, podpowiedź przy pustej komórce]
+  var DATY = {
+    zgony: [['data_zgonu', 'Data zgonu', 'data zgonu niewidoczna na skanie'], ['data_pogrzebu', 'Data pogrzebu', 'brak daty pogrzebu']],
+    urodzenia: [['data_ur', 'Data urodzenia', 'data urodzenia niewidoczna na skanie'], ['data_chrztu', 'Data chrztu', 'brak daty chrztu']],
+    malzenstwa: [['data_slubu', 'Data ślubu', 'data ślubu niewidoczna na skanie'], ['data_zapowiedzi', 'Zapowiedzi', '']]
+  };
 
   function wybierzTyp(policz) {
     if (stan.t && !stan.id && ZAKLADKI.some(function (z) { return z[0] === stan.t; })) { return stan.t; }
@@ -468,6 +498,12 @@
       dom.brak.appendChild(document.createTextNode('Widok pojedynczego aktu. '));
       dom.brak.appendChild(pokazWszystkie);
     }
+
+    // nagłówki dat zależą od zakładki (zgon/pogrzeb, urodzenie/chrzest)
+    dom.daty.forEach(function (th, i) {
+      th.setAttribute('data-sort', DATY[aktywnyTyp][i][0]);
+      th.querySelector('button').textContent = DATY[aktywnyTyp][i][1];
+    });
 
     // nagłówki: sortowanie
     var aktywny = stan.s || (tokens(stan.n).length || tokens(stan.i).length ? '' : 'rok');
@@ -580,6 +616,7 @@
       tabela: document.getElementById('tabela'),
       wiersze: document.getElementById('wiersze'),
       naglowki: Array.prototype.slice.call(document.querySelectorAll('#tabela thead th[data-sort]')),
+      daty: Array.prototype.slice.call(document.querySelectorAll('#tabela thead th.k-data')),
       strony: document.getElementById('strony'),
       stronaInfo: document.getElementById('strona-info'),
       poprzednia: document.getElementById('poprzednia'),
