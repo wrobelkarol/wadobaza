@@ -107,6 +107,13 @@ main { padding-top: 20px; padding-bottom: 32px; }
 .wyniki-licznik { margin: 0; font: 700 1.25rem var(--szeryf); }
 .na-stronie { display: flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--przygaszony); }
 .na-stronie select { font: inherit; padding: 6px 8px; border: 1px solid var(--linia); border-radius: 6px; background: var(--panel); color: var(--tusz); }
+.zakladki { display: flex; gap: 4px; border-bottom: 2px solid var(--akcent); margin-bottom: 12px; }
+.zakladka { font-family: inherit; font-weight: 600; font-size: .95rem; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--linia); border-bottom: 0; border-radius: 6px 6px 0 0; background: var(--panel); color: var(--tusz); cursor: pointer; white-space: nowrap; }
+.zakladka:hover { background: var(--akcent-jasny); }
+@media (max-width: 480px) { .zakladka { flex: 1 1 0; min-width: 0; flex-direction: column; justify-content: center; gap: 2px; padding: 6px 2px; font-size: .85rem; } }
+.zakladka[aria-selected="true"] { background: var(--akcent); border-color: var(--akcent); color: var(--akcent-tekst); }
+.zakladka-liczba { font-size: .8rem; font-weight: 700; min-width: 1.6em; padding: 1px 6px; border-radius: 999px; background: var(--akcent-jasny); color: var(--tusz); text-align: center; }
+.zakladka[aria-selected="true"] .zakladka-liczba { background: var(--akcent-tekst); color: var(--akcent); }
 .komunikat { background: var(--akcent-jasny); border-left: 4px solid var(--akcent); padding: 12px 16px; border-radius: 4px; margin: 8px 0 16px; }
 
 /* Tabela mieści się na stronie bez suwaka poziomego (stała szerokość kolumn, zawijanie tekstu,

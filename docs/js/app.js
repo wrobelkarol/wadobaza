@@ -154,7 +154,6 @@
       var r = rekordy[k];
       if (stan.id) { if (r.id !== stan.id) { continue; } out.push(r); r._wynik = 0; continue; }
       if (stan.p && r._pid !== stan.p) { continue; }
-      if (stan.t && r.typ !== stan.t) { continue; }
       if (stan.pl && r.plec !== stan.pl) { continue; }
       if (!isNaN(od) && r.rok < od) { continue; }
       if (!isNaN(doo) && r.rok > doo) { continue; }
@@ -398,16 +397,49 @@
 
   var dom = {};
 
+  /* Zakładki: akty urodzeń, małżeństw i zgonów nie mieszają się w jednej tabeli. Bez wybranej zakładki
+     (parametr t) otwiera się pierwsza, w której coś znaleziono. */
+  var ZAKLADKI = [['urodzenia', 'Urodzenia'], ['malzenstwa', 'Małżeństwa'], ['zgony', 'Zgony']];
+  var wszystkie = [];
+  var aktywnyTyp = 'zgony';
+
+  function wybierzTyp(policz) {
+    if (stan.t && !stan.id && ZAKLADKI.some(function (z) { return z[0] === stan.t; })) { return stan.t; }
+    var pierwszy = ZAKLADKI.filter(function (z) { return policz[z[0]]; })[0];
+    return pierwszy ? pierwszy[0] : 'zgony';
+  }
+
+  function rysujZakladki(policz) {
+    dom.zakladki.textContent = '';
+    ZAKLADKI.forEach(function (z) {
+      var ile = policz[z[0]] || 0;
+      var b = el('button', {
+        type: 'button', role: 'tab', class: 'zakladka',
+        'aria-selected': z[0] === aktywnyTyp ? 'true' : 'false'
+      }, z[1], el('span', { class: 'zakladka-liczba' }, String(ile)));
+      b.addEventListener('click', function () {
+        if (z[0] === aktywnyTyp) { return; }
+        stan.t = z[0];
+        stan.id = '';
+        szukaj(false);
+      });
+      dom.zakladki.appendChild(b);
+    });
+  }
+
   function rysuj() {
     var szukane = tokens(stan.n).concat(tokens(stan.i), tokens(stan.q));
-    var razem = wynik.length;
+    var policz = {};
+    wszystkie.forEach(function (r) { policz[r.typ] = (policz[r.typ] || 0) + 1; });
+    rysujZakladki(policz);
+    var razem = wynik.length, lacznie = wszystkie.length;
     var stron = Math.max(1, Math.ceil(razem / stan.pp));
     if (stan.str > stron) { stan.str = stron; }
     var start = (stan.str - 1) * stan.pp;
     var strona = wynik.slice(start, start + stan.pp);
 
-    dom.licznik.textContent = razem === 0 ? 'Brak wyników'
-      : 'Znaleziono ' + razem + ' ' + W.liczebnik(razem, 'akt', 'akty', 'aktów');
+    dom.licznik.textContent = lacznie === 0 ? 'Brak wyników'
+      : 'Znaleziono ' + lacznie + ' ' + W.liczebnik(lacznie, 'akt', 'akty', 'aktów');
 
     var frag = document.createDocumentFragment();
     strona.forEach(function (r) {
@@ -418,7 +450,13 @@
     dom.tabela.hidden = razem === 0;
 
     dom.brak.hidden = razem !== 0;
-    if (razem === 0) {
+    var wBazie = manifest.zbiory.some(function (z) { return z.typ === aktywnyTyp; });
+    if (razem === 0 && !wBazie) {
+      dom.brak.textContent = 'Aktów ' + (aktywnyTyp === 'urodzenia' ? 'urodzeń' : aktywnyTyp === 'malzenstwa' ? 'małżeństw' : 'zgonów') +
+        ' nie ma jeszcze w bazie – są w przygotowaniu.';
+    } else if (razem === 0 && lacznie) {
+      dom.brak.textContent = 'W tej zakładce nic nie znaleziono – wyniki są w innej zakładce powyżej.';
+    } else if (razem === 0) {
       dom.brak.textContent = '';
       dom.brak.appendChild(document.createTextNode(
         'Nic nie znaleziono. Spróbuj bez końcówki lub bez polskich znaków, zaznacz szukanie wśród rodziców i małżonków, ' +
@@ -426,9 +464,9 @@
     } else if (stan.id) {
       dom.brak.hidden = false;
       dom.brak.textContent = '';
-      var wszystkie = el('a', { href: location.pathname }, 'Pokaż wszystkie akty');
+      var pokazWszystkie = el('a', { href: location.pathname }, 'Pokaż wszystkie akty');
       dom.brak.appendChild(document.createTextNode('Widok pojedynczego aktu. '));
-      dom.brak.appendChild(wszystkie);
+      dom.brak.appendChild(pokazWszystkie);
     }
 
     // nagłówki: sortowanie
@@ -446,7 +484,11 @@
 
   function szukaj(zachowajStrone) {
     if (!zachowajStrone) { stan.str = 1; }
-    wynik = filtruj();
+    wszystkie = filtruj();
+    var policz = {};
+    wszystkie.forEach(function (r) { policz[r.typ] = (policz[r.typ] || 0) + 1; });
+    aktywnyTyp = wybierzTyp(policz);
+    wynik = wszystkie.filter(function (r) { return r.typ === aktywnyTyp; });
     sortuj(wynik);
     zapiszStanDoAdresu();
     rysuj();
@@ -456,19 +498,19 @@
 
   function odczytajFormularz() {
     var f = dom.formularz.elements;
-    ['n', 'i', 'od', 'do', 'p', 't', 'pl', 'd', 'q'].forEach(function (k) { stan[k] = (f[k].value || '').trim(); });
+    ['n', 'i', 'od', 'do', 'p', 'pl', 'd', 'q'].forEach(function (k) { stan[k] = (f[k].value || '').trim(); });
     stan.sz = f.sz.checked ? '1' : '0';
     stan.dk = f.dk.checked ? '1' : '';
     stan.id = '';
   }
   function wypelnijFormularz() {
     var f = dom.formularz.elements;
-    ['n', 'i', 'od', 'do', 'p', 't', 'pl', 'd', 'q'].forEach(function (k) { f[k].value = stan[k]; });
+    ['n', 'i', 'od', 'do', 'p', 'pl', 'd', 'q'].forEach(function (k) { f[k].value = stan[k]; });
     f.sz.checked = stan.sz !== '0';
     f.dk.checked = stan.dk === '1';
     dom.naStronie.value = String(stan.pp);
     // ukryte kryteria nie mogą działać po cichu – gdy któreś jest ustawione, pokaż je
-    if (stan.t || stan.pl || stan.d || stan.q) { document.getElementById('wiecej').open = true; }
+    if (stan.pl || stan.d || stan.q) { document.getElementById('wiecej').open = true; }
   }
   function opoznij(fn, ms) {
     var t;
@@ -476,12 +518,11 @@
   }
 
   function wypelnijListy() {
-    var parafie = {}, typy = {};
-    manifest.zbiory.forEach(function (z) { parafie[z.parafia_id] = z.parafia; typy[z.typ] = true; });
-    var sp = dom.formularz.elements.p, st = dom.formularz.elements.t;
+    var parafie = {};
+    manifest.zbiory.forEach(function (z) { parafie[z.parafia_id] = z.parafia; });
+    var sp = dom.formularz.elements.p;
     Object.keys(parafie).sort(function (a, b) { return kolator.compare(parafie[a], parafie[b]); })
       .forEach(function (id) { sp.appendChild(el('option', { value: id }, parafie[id])); });
-    Object.keys(typy).forEach(function (t) { st.appendChild(el('option', { value: t }, W.TYPY[t] || t)); });
   }
 
   function opisBazy() {
@@ -535,6 +576,7 @@
       wyniki: document.getElementById('wyniki'),
       licznik: document.getElementById('wyniki-naglowek'),
       brak: document.getElementById('brak-wynikow'),
+      zakladki: document.getElementById('zakladki'),
       tabela: document.getElementById('tabela'),
       wiersze: document.getElementById('wiersze'),
       naglowki: Array.prototype.slice.call(document.querySelectorAll('#tabela thead th[data-sort]')),
