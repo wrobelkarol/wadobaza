@@ -45,6 +45,11 @@
     { id: 'suchoty', nazwa: 'gruźlica', rdzen: 'gruzlic' },
     { id: 'czerwonka', nazwa: 'czerwonka', rdzen: 'czerwonk' },
     { id: 'tyfus', nazwa: 'tyfus', rdzen: 'tyfus' },
+    { id: 'cholera', nazwa: 'cholera', rdzen: 'cholera', caly: true },
+    { id: 'krztusiec', nazwa: 'krztusiec', rdzen: 'krztus' },
+    { id: 'krztusiec', nazwa: 'krztusiec', rdzen: 'pertuss' },
+    { id: 'kaszel', nazwa: 'kaszel', rdzen: 'kaszel', caly: true },  // całe słowo, żeby nie łapać nazwisk (Kaszuba)
+    { id: 'kaszel', nazwa: 'kaszel', rdzen: 'kaszlu', caly: true },
     { id: 'szkarlatyna', nazwa: 'szkarlatyna', rdzen: 'szkarlatyn' },
     { id: 'szkarlatyna', nazwa: 'szkarlatyna', rdzen: 'plonic' },
     { id: 'udar', nazwa: 'udar', rdzen: 'udar' },
