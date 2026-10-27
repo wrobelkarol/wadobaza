@@ -1,5 +1,5 @@
 {
-  "wygenerowano": "2026-10-26",
+  "wygenerowano": "2026-10-27",
   "max_rok": 1945,
   "max_rok_typ": {
     "urodzenia": 1926
@@ -17,9 +17,10 @@
       "lata": [
         1890,
         1891,
-        1892
+        1892,
+        1893
       ],
-      "rekordow": 191
+      "rekordow": 236
     }
   ],
   "zrodla": {

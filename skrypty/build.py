@@ -456,6 +456,11 @@ def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int 
         k = {h: wiersz[i] for i, h in enumerate(naglowki) if h}
         t = lambda kol: tekst(k.get(kol))  # noqa: E731
         nr, opis = liczba(k.get("Numer aktu")), t("Tekst aktu (cały)")
+        # jeden wycinek z dwoma numerami (np. bliźnięta „6 | 7”): id i sortowanie z pierwszego
+        numery = re.findall(r"\d+", tekst(k.get("Numer aktu")) or "")
+        nr_tekst = None
+        if nr is None and len(numery) > 1:
+            nr, nr_tekst = int(numery[0]), "–".join(numery)
         if nr is None and opis is None:
             continue
         if opis is None:
@@ -536,6 +541,7 @@ def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int 
             "typ": typ,
             "rok": rok,
             "nr": nr,
+            "nr_tekst": nr_tekst,
             "data_zgonu": zgon,
             "data_pogrzebu": pogrzeb,
             "dom": t("Numer domu"),

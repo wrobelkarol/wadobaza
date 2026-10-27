@@ -279,7 +279,7 @@
     if (imieNazwisko && r.nazwisko_auto) { imieNazwisko += ' (nazwisko ojca z opisu – wstępnie)'; }
     if (imieNazwisko && r.nazwisko_wg_rodzica) { imieNazwisko += ' (nazwisko z opisu rodziców)'; }
     // numeracja aktów zaczyna się od 1 w każdym roku księgi, stąd rok w etykiecie
-    fakt('Numer aktu w roku ' + r.rok, r.nr != null ? String(r.nr) : '', true);
+    fakt('Numer aktu w roku ' + r.rok, r.nr != null ? String(r.nr_tekst || r.nr) : '', true);
     fakt('Data zgonu', W.formatData(r.data_zgonu) || 'niewidoczna na skanie', true);
     fakt('Data pogrzebu', W.formatData(r.data_pogrzebu), true);
     fakt('Data ślubu', W.formatData(r.data_slubu), true);

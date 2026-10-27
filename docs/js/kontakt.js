@@ -39,7 +39,7 @@
       zbiory.some(function (z) { r = z.rekordy.filter(function (x) { return x.id === id; })[0] || null; return !!r; });
       if (!r) { return; }
       var kto = [r.imie, r.nazwisko].filter(Boolean).join(' ');
-      opisAktu = (W.TYPY[r.typ] || r.typ) + ' ' + r.rok + (r.nr != null ? ', akt nr ' + r.nr : '') +
+      opisAktu = (W.TYPY[r.typ] || r.typ) + ' ' + r.rok + (r.nr != null ? ', akt nr ' + (r.nr_tekst || r.nr) : '') +
         (kto ? ' – ' + kto : '') + ' (parafia ' + r.parafia + ')';
       akt.textContent = 'Dotyczy aktu: ' + opisAktu + '. ';
       var link = document.createElement('a');
