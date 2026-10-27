@@ -13,11 +13,20 @@
     { id: 'posiadacz-dobr', nazwa: 'posiadacz dóbr', rdzen: 'posiadacz' },
     { id: 'posiadacz-dobr', nazwa: 'posiadacz dóbr', rdzen: 'possessor' },
     { id: 'dominus', nazwa: 'Pan (D.)', rdzen: 'dominus' },
+    { id: 'rzemieslnik', nazwa: 'szewc', rdzen: 'szewc', caly: true },  // caly: tylko całe słowo, żeby nie łapać nazwisk (Szewczyk)
+    { id: 'rzemieslnik', nazwa: 'szewc', rdzen: 'szewca', caly: true },
+    { id: 'rzemieslnik', nazwa: 'murarz', rdzen: 'murarz', caly: true },
+    { id: 'rzemieslnik', nazwa: 'młynarz', rdzen: 'mlynarz' },
+    { id: 'gajowy', nazwa: 'gajowy', rdzen: 'gajow' },
+    { id: 'organista', nazwa: 'organista', rdzen: 'organist', caly: true },
+    { id: 'zebrak', nazwa: 'żebrak', rdzen: 'zebrak' },
+    { id: 'zebrak', nazwa: 'żebrak', rdzen: 'zebracz' },
     { id: 'nieslubne', nazwa: 'nieślubne dziecko', rdzen: 'nieslub' },
     { id: 'zapalenie', nazwa: 'zapalenie', rdzen: 'zapaleni' },
     { id: 'niezyt', nazwa: 'nieżyt jelit', rdzen: 'niezyt' },
     { id: 'niezyt', nazwa: 'nieżyt jelit', rdzen: 'catarrh' },
     { id: 'niezyt', nazwa: 'nieżyt jelit', rdzen: 'catharrh' },
+    { id: 'krup', nazwa: 'błonica', rdzen: 'blonic' },
     { id: 'krup', nazwa: 'krup', rdzen: 'crup' },
     { id: 'krup', nazwa: 'krup', rdzen: 'croup' },
     { id: 'rak', nazwa: 'rak', rdzen: 'carcinom' },
@@ -27,7 +36,25 @@
     { id: 'ciezki-porod', nazwa: 'ciężki poród', rdzen: 'porod' },
     { id: 'ciezki-porod', nazwa: 'ciężki poród', rdzen: 'wpisalem' },  // formuła „Wpisałem ja…” (inscripsi)
     { id: 'zabkowanie', nazwa: 'ząbkowanie', rdzen: 'zabkowa' },
-    { id: 'paraliz', nazwa: 'paraliż', rdzen: 'parali' }
+    { id: 'paraliz', nazwa: 'paraliż', rdzen: 'parali' },
+    { id: 'oslabienie', nazwa: 'osłabienie', rdzen: 'oslabieni' },
+    { id: 'poronienie', nazwa: 'poronienie', rdzen: 'poronieni' },
+    { id: 'poronienie', nazwa: 'martwe urodzenie', rdzen: 'martwo' },
+    { id: 'suchoty', nazwa: 'suchoty', rdzen: 'suchot' },
+    { id: 'suchoty', nazwa: 'skrofuły', rdzen: 'skroful' },
+    { id: 'suchoty', nazwa: 'gruźlica', rdzen: 'gruzlic' },
+    { id: 'czerwonka', nazwa: 'czerwonka', rdzen: 'czerwonk' },
+    { id: 'tyfus', nazwa: 'tyfus', rdzen: 'tyfus' },
+    { id: 'szkarlatyna', nazwa: 'szkarlatyna', rdzen: 'szkarlatyn' },
+    { id: 'szkarlatyna', nazwa: 'szkarlatyna', rdzen: 'plonic' },
+    { id: 'udar', nazwa: 'udar', rdzen: 'udar' },
+    { id: 'udar', nazwa: 'udar', rdzen: 'apopleks' },
+    { id: 'puchlina', nazwa: 'puchlina wodna', rdzen: 'puchlin' },
+    { id: 'choroba-brighta', nazwa: 'choroba Brighta', rdzen: 'brighta' },
+    { id: 'utoniecie', nazwa: 'utonięcie', rdzen: 'utonie' },
+    { id: 'utoniecie', nazwa: 'utonięcie', rdzen: 'utopi' },
+    { id: 'samobojstwo', nazwa: 'samobójstwo', rdzen: 'samobojst' },
+    { id: 'samobojstwo', nazwa: 'samobójstwo', rdzen: 'powiesz' }
   ];
 
   /* ------------------------------------------------------------ tekst */
@@ -309,7 +336,7 @@
     var blad = el('a', { href: 'kontakt.html?id=' + encodeURIComponent(r.id) }, 'Zgłoś błąd w tym akcie');
     // Słowniczek: ogólny link + bezpośrednie odnośniki do pojęć, które padają w tym akcie
     var pojecia = POJECIA.filter(function (p, i) {
-      var pierwsze = POJECIA.findIndex(function (x) { return x.id === p.id && r._calosc.some(function (t) { return t.indexOf(x.rdzen) === 0; }); });
+      var pierwsze = POJECIA.findIndex(function (x) { return x.id === p.id && r._calosc.some(function (t) { return x.caly ? t === x.rdzen : t.indexOf(x.rdzen) === 0; }); });
       return pierwsze === i;  // każde hasło raz, nawet gdy pasuje kilka form (starość / uwiąd)
     });
     var slownik = el('span', null, el('a', { href: 'slowniczek.html' }, 'Słowniczek'),

@@ -520,9 +520,9 @@ def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int 
         # przyczyna: sama choroba; kapłan: samo imię i nazwisko (kolumna "Ksiądz");
         # z dopisków do "dodatkowych" idzie tylko to, co nie jest formułą o sakramentach ani o pochowaniu/zapisaniu
         przyczyna = t("Przyczyna zgonu")
-        if przyczyna:  # kilka przyczyn bez przecinka ("Starość Zapalenie") -> "starość, zapalenie"
+        if przyczyna:  # kilka przyczyn bez przecinka ("Starość Zapalenie") -> "starość, zapalenie"; "Choroba Brighta" zostaje razem
             przyczyna = ", ".join(c[0].lower() + c[1:] if not c[:2].isupper() else c
-                                  for c in re.split(rf"\s+(?=[{CAP}])", przyczyna))
+                                  for c in re.split(rf"(?<!horoba)\s+(?=[{CAP}])", przyczyna))
         reszta, kaplan_zdanie = rozdziel_kaplana(t("Adnotacje / dopiski"))
         kaplan = t("Ksiądz") or kaplan_zdanie
         if reszta:
