@@ -426,10 +426,24 @@ def czy_weryfikacja(wb) -> bool:
     return "Polski" in wb.sheetnames and "Numer aktu" in [c.value for c in wb["Polski"][1]]
 
 
+MIESIACE_SLOWNIE = {
+    "jan": 1, "styc": 1, "feb": 2, "lut": 2, "mart": 3, "mar": 3, "apr": 4, "kwie": 4, "mai": 5, "maj": 5,
+    "jun": 6, "czerw": 6, "jul": 7, "lip": 7, "aug": 8, "sierp": 8, "sept": 9, "wrze": 9, "oct": 10, "pazd": 10,
+    "nov": 11, "list": 11, "dec": 12, "grud": 12,
+}
+
+
 def _dzien(v: object) -> tuple[int | None, int | None]:
-    """Dzień z Weryfikacji: 5 / '5.' -> (5, None); '28/2' -> (28, 2)."""
-    m = re.fullmatch(r"\s*(\d{1,2})\s*(?:/\s*(\d{1,2}))?\s*\.?\s*", str(v if v is not None else ""))
-    return (int(m[1]), int(m[2]) if m[2] else None) if m else (None, None)
+    """Dzień z Weryfikacji: 5 / '5.' -> (5, None); '28/2' -> (28, 2); '2 Januarii 1897' -> (2, 1)."""
+    t = str(v if v is not None else "")
+    m = re.fullmatch(r"\s*(\d{1,2})\s*(?:/\s*(\d{1,2}))?\s*\.?\s*", t)
+    if m:
+        return int(m[1]), int(m[2]) if m[2] else None
+    m = re.fullmatch(r"\s*(\d{1,2})\.?\s+([^\W\d_]+)\.?(?:\s+\d{4})?\s*", t)  # dzień ze słownym miesiącem
+    if m:
+        slowo = zloz(m[2])
+        return int(m[1]), next((n for k, n in MIESIACE_SLOWNIE.items() if slowo.startswith(k)), None)
+    return None, None
 
 
 def _bez_ulamka_lat(t: str | None) -> str | None:
@@ -550,8 +564,11 @@ def wczytaj_weryfikacje(wb, plik: Path, parafia: str, typ: str, rok_folder: int 
             "nazwisko_auto": nazwisko_auto,
             "nazwisko_w_akcie": nazwisko_w_akcie,
             "imie_ojca": oj_imie,
+            "nazwisko_ojca": oj_nazwisko,
+            "stan_ojca": t("Ojciec – stan/zawód"),
             "imie_matki": ma_imie,
             "nazwisko_matki": ma_rodowe,
+            "stan_matki": t("Matka – stan/zawód"),
             "malzonek": malzonek,
             "plec": plec,
             "religia": religia,

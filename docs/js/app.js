@@ -307,8 +307,9 @@
       fakty.push(el('div', null, el('dt', { text: etykieta }), dd));
     }
     var auto = !!r.rodzice_auto;
-    var matka = r.matka || [r.imie_matki, r.nazwisko_matki].filter(Boolean).join(' ');
-    var ojciec = r.ojciec || r.imie_ojca || '';
+    var przecinek = function () { return [].slice.call(arguments).filter(Boolean).join(', '); };
+    var matka = r.matka || przecinek([r.imie_matki, r.nazwisko_matki].filter(Boolean).join(' '), r.stan_matki);
+    var ojciec = r.ojciec || przecinek([r.imie_ojca, r.nazwisko_ojca].filter(Boolean).join(' '), r.stan_ojca);
     function zOpisu(w) { return w && auto ? w + ' (wstępnie z opisu)' : w; }
     var imieNazwisko = [r.imie, r.nazwisko].filter(Boolean).join(' ');
     if (imieNazwisko && r.nazwisko_auto) { imieNazwisko += ' (nazwisko ojca z opisu – wstępnie)'; }
@@ -316,7 +317,6 @@
     // numeracja aktów zaczyna się od 1 w każdym roku księgi, stąd rok w etykiecie
     fakt('Numer aktu w roku ' + r.rok, r.nr != null ? String(r.nr_tekst || r.nr) : '', true);
     if (r.typ === 'urodzenia') {
-      var przecinek = function () { return [].slice.call(arguments).filter(Boolean).join(', '); };
       fakt('Data urodzenia', W.formatData(r.data_ur) || 'niewidoczna na skanie', true);
       fakt('Data chrztu', W.formatData(r.data_chrztu), true);
       fakt('Numer domu', r.dom, true);
